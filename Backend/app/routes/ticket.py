@@ -77,12 +77,28 @@ def create_service_request():
 
         db.session.add(ticket)
         db.session.commit()
+        
+        from app.utils.email_utils import send_ticket_confirmation_email
+        
+        try:
+            send_ticket_confirmation_email(
+                user_email=user_email,
+                user_name=user_name,
+                ticket_id=ticket.id,
+                subject=data.get('subject'),
+                description=data.get('description'),
+                priority=data.get('priority')
+            )
+            print(f"Confirmation email sent to {user_email}")
+        except Exception as e:
+            print(f"Failed to send confirmation email: {str(e)}")
 
         return jsonify({'message': 'Service Request Created Successfully'}), 201
 
     except Exception as e:
         print(f"Error creating service request: {str(e)}")
         return jsonify({'error': str(e)}), 500
+    
     
     
 

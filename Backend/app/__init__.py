@@ -2,8 +2,10 @@ from flask import Flask
 from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+from flask_mail import Mail
 
 db = SQLAlchemy()
+mail = Mail()
 
 def create_app():
     app = Flask(__name__)
@@ -16,6 +18,16 @@ def create_app():
     app.config["JWT_HEADER_NAME"] = "Authorization"          # ✅ REQUIRED  
     app.config["JWT_HEADER_TYPE"] = "Bearer"                 # ✅ REQUIRED
 
+    app.config['MAIL_SERVER'] = 'smtp.gmail.com'  # Change to your SMTP server
+    app.config['MAIL_PORT'] = 587
+    app.config['MAIL_USE_TLS'] = True
+    app.config['MAIL_USE_SSL'] = False
+    app.config['MAIL_USERNAME'] = 'cyberops.lcs@gmail.com'  # Your email
+    app.config['MAIL_PASSWORD'] = 'zieaynrupxmmgvnl'     # Your app password
+    app.config['MAIL_DEFAULT_SENDER'] = 'LankaComm Support<cyberops.lcs@gmail.com>'
+    
+    mail.init_app(app)
+    
     jwt = JWTManager(app)
 
     # Initialize extensions
