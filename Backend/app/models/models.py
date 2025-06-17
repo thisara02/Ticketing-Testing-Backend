@@ -41,11 +41,11 @@ class Engineer(db.Model):
 
 class Ticket(db.Model):
     __tablename__ = 'ticket'
-
     id = db.Column(db.Integer, primary_key=True)
     subject = db.Column(db.String(255), nullable=False)
     type = db.Column(db.String(100))
     description = db.Column(db.Text)
+    priority = db.Column(db.String(50))
     requester_name = db.Column(db.String(120))
     requester_email = db.Column(db.String(120))
     requester_contact = db.Column(db.String(20))

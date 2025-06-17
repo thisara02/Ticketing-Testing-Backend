@@ -36,6 +36,8 @@ const Login = () => {
       // On success: save token,  info to localStorage or context
       localStorage.setItem("cusToken", response.data.token);
       localStorage.setItem("cusName", response.data.cus.name);
+      localStorage.setItem("cusDesignation", response.data.cus.designation);
+      localStorage.setItem("cusMobile", response.data.cus.mobile);
       navigate("/home");
     } catch (err: any) {
       if (err.response && err.response.status === 401) {
