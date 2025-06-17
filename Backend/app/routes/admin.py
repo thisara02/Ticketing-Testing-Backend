@@ -80,7 +80,7 @@ def admin_login():
     admin = Admin.query.filter_by(email=email).first()
     if admin and admin.check_password(password):
         token = generate_jwt_token(admin)
-        return jsonify({"token": token, "admin": {"id": admin.id, "name": admin.name, "email": admin.email}}), 200
+        return jsonify({"token": token, "admin": {"id": admin.id, "name": admin.name, "email": admin.email,"mobile": admin.mobile,}}), 200
 
     return jsonify({"message": "Invalid email or password"}), 401
 
@@ -90,6 +90,7 @@ def generate_jwt_token(admin):
         "id": admin.id,
         "email": admin.email,
         "name": admin.name,
+        "mobile": admin.mobile,
         "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=8)
     }
     token = jwt.encode(payload, current_app.config["SECRET_KEY"], algorithm="HS256")

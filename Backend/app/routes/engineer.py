@@ -110,7 +110,7 @@ def eng_login():
     eng = Engineer.query.filter_by(email=email).first()
     if eng and eng.check_password(password):
         token = generate_jwt_token(eng)
-        return jsonify({"token": token, "eng": {"id": eng.id, "name": eng.name, "email": eng.email}}), 200
+        return jsonify({"token": token, "eng": {"id": eng.id, "name": eng.name, "email": eng.email,"mobile": eng.mobile,"designation": eng.designation,}}), 200
 
     return jsonify({"message": "Invalid email or password"}), 401
 
@@ -120,6 +120,8 @@ def generate_jwt_token(eng):
         "id": eng.id,
         "email": eng.email,
         "name": eng.name,
+        "designation": eng.designation,
+        "mobile": eng.mobile,
         "exp": datetime.utcnow() + timedelta(hours=8)
     }
     token = jwt.encode(payload, current_app.config["SECRET_KEY"], algorithm="HS256")

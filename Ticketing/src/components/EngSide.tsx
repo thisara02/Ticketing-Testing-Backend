@@ -5,21 +5,39 @@ import { useNavigate } from "react-router-dom";
 import { FaTicket, FaUserGroup } from "react-icons/fa6";
 import { NavLink } from "react-router-dom";
 import Swal from "sweetalert2";
+import {jwtDecode} from "jwt-decode";
 
 // Sample user data — you can replace these with real props or context
-const user = {
-  name: "Madura Jayasundara",
-  email: "maduraj@lankacom.net",
-  company:"Lanka Communication Services",
-};
-
-
 interface SidebarProps {
   isOpen: boolean;
 }
 
+// Define the shape of your decoded JWT payload
+interface DecodedToken {
+  name: string;
+  email: string;
+  exp: number;
+}
+
 const EngSide: React.FC<SidebarProps> = ({ isOpen }) => {
     const navigate = useNavigate();
+
+    let engineerName = "Guest";
+   let engineerEmail = "guest@example.com";
+
+   const token = localStorage.getItem("engToken");
+   
+     if (token) {
+       try {
+         const decoded = jwtDecode<DecodedToken>(token);
+         engineerName = decoded.name;
+         engineerEmail = decoded.email;
+       } catch (error) {
+         console.error("Failed to decode JWT token:", error);
+         // Optional: clear invalid token
+         localStorage.removeItem("engToken");
+       }
+     }
 
     const handleLogout = () => {
       Swal.fire({
@@ -38,6 +56,7 @@ const EngSide: React.FC<SidebarProps> = ({ isOpen }) => {
 
       }).then((result) => {
         if (result.isConfirmed) {
+          localStorage.removeItem("engToken");
           // Perform logout logic (e.g., clear auth tokens, call API, etc.)
           // Then navigate to the login page
           navigate("/eng-login");
@@ -61,9 +80,9 @@ const EngSide: React.FC<SidebarProps> = ({ isOpen }) => {
             onClick={() => navigate("/eng-profile")}
         />
         
-            <p className="font-semibold text-black   text-base font-jura text-center">{user.name}</p>
+            <p className="font-semibold text-black   text-base font-jura text-center">{engineerName}</p>
             {/* <p className="text-gray-500 text-sm">{user.email}</p> */}
-            <p className="text-black   text-sm font-jura">{user.email}</p>
+            <p className="text-black   text-sm font-jura">{engineerEmail}</p>
             
         </div>
         </div>

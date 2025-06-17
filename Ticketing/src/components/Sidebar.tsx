@@ -54,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       },
     }).then((result) => {
       if (result.isConfirmed) {
-        localStorage.removeItem("token");
+        localStorage.removeItem("cusToken");
         navigate("/login");
       }
     });

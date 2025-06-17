@@ -36,6 +36,7 @@ const AdminLogin = () => {
       // On success: save token, admin info to localStorage or context
       localStorage.setItem("adminToken", response.data.token);
       localStorage.setItem("adminName", response.data.admin.name);
+      localStorage.setItem("adminMobile", response.data.admin.mobile);
       // Redirect to admin dashboard
       navigate("/admin-dash");
     } catch (err: any) {

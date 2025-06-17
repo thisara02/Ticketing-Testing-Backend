@@ -8,7 +8,7 @@ import axios from "axios";
 import { useState } from "react";
 
 const EngLogin = () => {
-      const navigate = useNavigate();
+  const navigate = useNavigate();
 
   // Form state
   const [email, setEmail] = useState("");
@@ -36,6 +36,8 @@ const EngLogin = () => {
       // On success: save token, admin info to localStorage or context
       localStorage.setItem("engToken", response.data.token);
       localStorage.setItem("engName", response.data.eng.name);
+      localStorage.setItem("engDesignation", response.data.eng.designation);
+      localStorage.setItem("engMobile", response.data.eng.mobile);
       // Redirect to admin dashboard
       navigate("/eng-dash");
     } catch (err: any) {
@@ -80,7 +82,7 @@ const EngLogin = () => {
               Please sign in to continue
             </p>
 
-                          <form
+            <form
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleLogin();

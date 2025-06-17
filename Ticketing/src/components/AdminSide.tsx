@@ -5,13 +5,14 @@ import { useNavigate } from "react-router-dom";
 import { FaUserGroup } from "react-icons/fa6";
 import { NavLink } from "react-router-dom";
 import Swal from "sweetalert2";
+import { jwtDecode } from "jwt-decode";
 
 // Sample user data — you can replace these with real props or context
-const user = {
-  name: "Thisara Madusanka",
-  email: "thisaram@lankacom.net",
-  company:"Lanka Communication Services",
-};
+interface DecodedToken {
+  name: string;
+  email: string;
+  exp: number;
+}
 
 
 interface SidebarProps {
@@ -20,6 +21,22 @@ interface SidebarProps {
 
 const AdminSide: React.FC<SidebarProps> = ({ isOpen }) => {
     const navigate = useNavigate();
+    let adminName = "Guest";
+  let adminEmail = "guest@example.com";
+
+  const token = localStorage.getItem("adminToken");
+  
+    if (token) {
+      try {
+        const decoded = jwtDecode<DecodedToken>(token);
+        adminName = decoded.name;
+        adminEmail = decoded.email;
+      } catch (error) {
+        console.error("Failed to decode JWT token:", error);
+        // Optional: clear invalid token
+        localStorage.removeItem("adminToken");
+      }
+    }
 
     const handleLogout = () => {
       Swal.fire({
@@ -40,6 +57,7 @@ const AdminSide: React.FC<SidebarProps> = ({ isOpen }) => {
         if (result.isConfirmed) {
           // Perform logout logic (e.g., clear auth tokens, call API, etc.)
           // Then navigate to the login page
+          localStorage.removeItem("adminToken");
           navigate("/admin-login");
         }
       });
@@ -61,9 +79,9 @@ const AdminSide: React.FC<SidebarProps> = ({ isOpen }) => {
             onClick={() => navigate("/admin-profile")}
         />
         
-            <p className="font-semibold text-gray-800 text-base font-jura text-center">{user.name}</p>
+            <p className="font-semibold text-gray-800 text-base font-jura text-center">{adminName}</p>
             {/* <p className="text-gray-500 text-sm">{user.email}</p> */}
-            <p className="text-gray-500 text-sm font-jura">{user.company}</p>
+            <p className="text-gray-500 text-sm font-jura">{adminEmail}</p>
             
         </div>
         </div>

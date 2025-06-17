@@ -1,50 +1,117 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "../../components/Sidebar";
 import Navbar from "../../components/Navbar";
 import { FaUser, FaExclamationTriangle, FaFileAlt } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import axios from "axios";
 
 const CreateFaultyRequest = () => {
-
   const navigate = useNavigate();
-
-  const CreatedFT = () => {
-  Swal.fire({
-    title: "Your Faulty Ticket has been recorded successfully",
-    text: "Your request was sent to the engineers. Please wait for their response.",
-    icon: "info",
-    showCancelButton: false,
-    timer: 1500,
-    showConfirmButton: false,
-    confirmButtonColor: "#f5365c",
-    cancelButtonColor: "#3085d6",
-    confirmButtonText: "Continue",
-    cancelButtonText: "Cancel",
-    customClass: {
-      popup: "swal2-text-black",
-      confirmButton: "swal2-confirm-button",
-      cancelButton: "swal2-cancel-button"
-    }
-  });
-
-  // Move setTimeout outside of Swal.fire()
-  setTimeout(() => navigate("/home"), 1500);
-};
-
-      
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
-  const [inquiryType, setInquiryType] = useState("");
+  // Form fields
+  const [fullName, setFullName] = useState("");
+  const [designation, setDesignation] = useState("");
+  const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [subject, setSubject] = useState("");
+  const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("");
+  const [file, setFile] = useState<File | null>(null);
 
+  // Priority color mapping
   const priorityColors: Record<string, string> = {
     Critical: "text-red-500",
     High: "text-orange-500",
     Medium: "text-yellow-500",
     Low: "text-green-600",
   };
+
+  // Fetch user info from backend on mount using fetch
+  useEffect(() => {
+    const token = localStorage.getItem("cusToken");
+    if (token) {
+      fetch("http://localhost:5000/api/ticket/userinfo", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            if (res.status === 401) {
+              Swal.fire({
+                icon: "error",
+                title: "Session expired",
+                text: "Please login again.",
+              });
+              navigate("/login");
+            }
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+          return res.json();
+        })
+        .then((data) => {
+          setFullName(data.name || "");
+          setDesignation(data.designation || "");
+          setEmail(data.email || "");
+          setMobile(data.mobile || "");
+        })
+        .catch((error) => {
+          console.error("Failed to fetch user info:", error);
+        });
+    }
+  }, [navigate]);
+
+  // Submit handler (still using axios for POST)
+  const handleSubmit = async () => {
+  if (!subject || !description || !priority) {
+    Swal.fire({
+      icon: "warning",
+      title: "All fields are required!",
+      text: "Please complete all fields before submitting.",
+    });
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("subject", subject);
+  formData.append("description", description);
+  formData.append("priority", priority);
+  if (file) formData.append("document", file); // ✅ Make sure it's named "document"
+
+  try {
+    const res = await axios.post(
+      "http://localhost:5000/api/ticket/ft",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${localStorage.getItem("cusToken")}`,
+        },
+      }
+    );
+
+    console.log("Success:", res.data);
+    Swal.fire({
+      title: "Faulty Ticket Created",
+      text: "Your request was successfully submitted.",
+      icon: "success",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+    setTimeout(() => navigate("/home"), 1500);
+  } catch (error: any) {
+    console.error("Error creating request:", error.response?.data || error.message);
+    Swal.fire({
+      title: "Error",
+      text: error.response?.data?.error || "Something went wrong.",
+      icon: "error",
+    });
+  }
+};
 
   return (
     <div className="h-screen w-screen flex overflow-hidden">
@@ -80,22 +147,34 @@ const CreateFaultyRequest = () => {
                 <input
                   type="text"
                   placeholder="Full Name"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800 font-jura"
+                  value={fullName}
+                  readOnly
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="cursor-not-allowed w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800 font-jura"
                 />
                 <input
                   type="text"
                   placeholder="Designation"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800 font-jura"
+                  value={designation}
+                  readOnly
+                  onChange={(e) => setDesignation(e.target.value)}
+                  className="cursor-not-allowed w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800 font-jura"
                 />
                 <input
                   type="email"
                   placeholder="Email Address"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800 font-jura"
+                  value={email}
+                  readOnly
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="cursor-not-allowed w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800 font-jura"
                 />
                 <input
                   type="text"
                   placeholder="Contact Number"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800 font-jura"
+                  value={mobile}
+                  readOnly
+                  onChange={(e) => setMobile(e.target.value)}
+                  className="cursor-not-allowed w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800 font-jura"
                 />
               </div>
             </div>
@@ -109,8 +188,8 @@ const CreateFaultyRequest = () => {
               <div className="space-y-4">
                 <div className="mb-4">
                   <select
-                    value={inquiryType}
-                    onChange={(e) => setInquiryType(e.target.value)}
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
                     className="w-1/2 px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800 font-jura"
                   >
                     <option value="" disabled selected>- Select Inquiry Type -</option>
@@ -135,6 +214,8 @@ const CreateFaultyRequest = () => {
                 <textarea
                   rows={5}
                   placeholder="Describe the issue in detail..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800 font-jura"
                 ></textarea>
 
@@ -167,13 +248,16 @@ const CreateFaultyRequest = () => {
               </h2>
               <input
                 type="file"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
                 className="block w-full text-gray-700 bg-white border border-gray-300 rounded-md cursor-pointer py-2 px-3 font-jura"
               />
             </div>
 
             {/* Submit Button */}
             <div className="text-left">
-              <button className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-teal-700 transition mt-10 p-5 font-jura" onClick={CreatedFT}>
+              <button 
+              onClick={handleSubmit}
+              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-teal-700 transition mt-10 p-5 font-jura">
                 Submit Request
               </button>
             </div>
