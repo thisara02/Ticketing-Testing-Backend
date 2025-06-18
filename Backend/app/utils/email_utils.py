@@ -219,6 +219,76 @@ def send_ft_confirmation_email(user_email, user_name, ticket_id, subject, priori
     except Exception as e:
         print(f"Failed to send email: {str(e)}")
         return False
+    
+    
+def send_assignment_notification_email(user_email, user_name, ticket_id, subject, engineer_name, engineer_contact):
+    """Notify user about assigned engineer"""
+    try:
+        msg = Message(
+            subject='Your Ticket Has Been Assigned',
+            recipients=[user_email],
+            sender=current_app.config['MAIL_DEFAULT_SENDER']
+        )
+
+        msg.html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }}
+                .container {{ max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; }}
+                .header {{ background-color: #3b82f6; color: white; padding: 20px; text-align: center; border-radius: 5px; }}
+                .content {{ color: #333; line-height: 1.6; }}
+                .footer {{ margin-top: 30px; font-size: 12px; color: #C70039; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>Ticket Assigned</h2>
+                </div>
+                <div class="content">
+                    <p>Dear {user_name},</p>
+                    <p>Your ticket <strong> #{ticket_id:06d} -  {subject}</strong> has been assigned to one of our engineers.</p>
+                    <p><strong>Assigned Engineer:</strong> {engineer_name}<br>
+                    <strong>Contact:</strong> {engineer_contact}</p>
+                    <p>They will be in touch shortly. You can contact them directly for urgent matters.</p>
+                    <p>Thank you for your continued patience.</p>
+                    <p>Best regards,<br><strong>Cyber Security Operations Team</strong></p>
+                </div>
+                <div class="footer">
+                    <p>This is an automated message. Please do not reply.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        msg.body = f"""
+        Dear {user_name},
+
+        Your ticket #{ticket_id:06d} - {subject} has been assigned to:
+
+        Engineer: {engineer_name}
+        Contact: {engineer_contact}
+
+        They will contact you soon. Feel free to reach out for urgent support.
+
+        Best regards,
+        Cyber Security Operations Team
+        """
+
+        thread = threading.Thread(
+            target=send_async_email,
+            args=(current_app._get_current_object(), msg)
+        )
+        thread.start()
+
+        return True
+
+    except Exception as e:
+        print(f"Failed to send assignment email: {str(e)}")
+        return False
 
 # Import datetime at the top of the file
 from datetime import datetime

@@ -7,6 +7,8 @@ from flask import current_app
 import jwt
 from app import db
 from app.models import Ticket
+from flask_jwt_extended import get_jwt
+from app.utils.email_utils import send_assignment_notification_email
 
 ticket_bp = Blueprint("ticket", __name__, url_prefix="/api/ticket")
 
@@ -319,6 +321,15 @@ def assign_ticket(ticket_id):
         ticket.status = "Ongoing"
 
         db.session.commit()
+        
+        send_assignment_notification_email(
+            user_email=ticket.requester_email,
+            user_name=ticket.requester_name,
+            ticket_id=ticket.id,
+            subject=ticket.subject,
+            engineer_name=engineer_name,
+            engineer_contact=engineer_contact
+        )
 
         return jsonify({"message": "Ticket assigned successfully"}), 200
 
@@ -362,3 +373,5 @@ def ticket_summary():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+    

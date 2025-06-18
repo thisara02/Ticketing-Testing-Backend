@@ -140,7 +140,7 @@ const EngDash = () => {
   fetchPendingTickets();
 }
 
-const interval = setInterval(combinedFetch, 10000);
+const interval = setInterval(combinedFetch, 1000);
   return () => clearInterval(interval);
 }, []);
 
@@ -219,7 +219,7 @@ const interval = setInterval(combinedFetch, 10000);
                       <div>
                         <p
                           className="font-semibold text-red-600 cursor-pointer hover:underline"
-                          onClick={() => navigate("/eng-view-pending")}
+                          onClick={() => navigate(`/eng-view-pending/${ticket.id}`)}
                         >
                           <span>Ticket ID: </span>
                           {ticket.id}
