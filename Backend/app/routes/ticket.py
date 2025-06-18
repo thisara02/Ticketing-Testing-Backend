@@ -375,3 +375,51 @@ def ticket_summary():
         return jsonify({'error': str(e)}), 500
     
     
+@ticket_bp.route('/assigned', methods=['GET'])
+def get_assigned_tickets():
+    try:
+        secret = current_app.config['SECRET_KEY']
+        token = request.headers.get("Authorization", None)
+
+        if not token:
+            return jsonify({"error": "Authorization header missing"}), 401
+
+        parts = token.split()
+        if len(parts) != 2 or parts[0].lower() != "bearer":
+            return jsonify({"error": "Invalid Authorization header format"}), 401
+
+        token = parts[1]
+
+        try:
+            decoded = jwt.decode(token, secret, algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            return jsonify({"error": "Token expired"}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid token"}), 401
+
+        engineer_name = decoded.get("name")
+        if not engineer_name:
+            return jsonify({'error': 'Invalid token: missing engineer name'}), 401
+
+        tickets = Ticket.query.filter_by(status="Ongoing", engineer_name=engineer_name)\
+                              .order_by(Ticket.created_at.desc()).all()
+
+        ticket_data = []
+        for ticket in tickets:
+            ticket_data.append({
+                "id": f"{ticket.id:06d}",
+                "subject": ticket.subject,
+                "type": ticket.type,
+                "description": ticket.description,
+                "priority": ticket.priority,
+                "status": ticket.status,
+                "company": ticket.requester_company,
+                "assignedAt": ticket.created_at.isoformat()  # 🔥 FIXED HERE
+            })
+
+        return jsonify(ticket_data), 200
+
+    except Exception as e:
+        print(f"Error fetching assigned tickets: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
