@@ -42,6 +42,9 @@ const EngAssignedTicket = () => {
     };
 
     fetchAssignedTickets();
+
+    const interval = setInterval(fetchAssignedTickets, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const serviceRequests = tickets.filter((ticket) => ticket.type === "Service Request");

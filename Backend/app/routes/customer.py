@@ -4,6 +4,7 @@ from app.models import Customer
 from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 from datetime import datetime, timedelta
+from app.models import Ticket
 
 customer_bp = Blueprint("customer", __name__, url_prefix="/api/customers")  # Adjust prefix to match frontend
 
@@ -121,3 +122,56 @@ def generate_jwt_token(cus):
     # jwt.encode returns bytes in PyJWT >= 2.0, so decode to str if needed:
     return token if isinstance(token, str) else token.decode('utf-8')
 
+
+
+@customer_bp.route('/ongoing-tickets', methods=['GET'])
+def get_customer_ongoing_tickets():
+    try:
+        secret = current_app.config['SECRET_KEY']
+        token = request.headers.get("Authorization", None)
+
+        if not token:
+            return jsonify({"error": "Authorization header missing"}), 401
+
+        parts = token.split()
+        if len(parts) != 2 or parts[0].lower() != "bearer":
+            return jsonify({"error": "Invalid Authorization header format"}), 401
+
+        token = parts[1]
+
+        try:
+            decoded = jwt.decode(token, secret, algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            return jsonify({"error": "Token expired"}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid token"}), 401
+
+        company = decoded.get("company")
+        if not company:
+            return jsonify({"error": "Invalid token: missing company"}), 401
+
+        tickets = (
+            Ticket.query
+            .filter_by(requester_company=company, status="Ongoing")
+            .order_by(Ticket.created_at.desc())
+            .all()
+        )
+
+        ticket_list = []
+        for ticket in tickets:
+            ticket_list.append({
+                "id": f"{ticket.id:06d}",
+                "ticketType": ticket.type,  # make sure your model uses 'type' or update accordingly
+                "ticketCreatedBy": ticket.requester_name,  # adjust attribute name
+                "assignedEngineer": ticket.engineer_name,  # adjust attribute name
+                "type": ticket.type,       # adjust attribute name
+                "description": ticket.description,
+                "createdAt": ticket.created_at.isoformat() if ticket.created_at else None,
+                "status": ticket.status,
+            })
+
+        return jsonify(ticket_list), 200
+
+    except Exception as e:
+        print(f"Error fetching ongoing tickets: {str(e)}")
+        return jsonify({'error': str(e)}), 500

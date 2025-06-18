@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "../../components/Sidebar";
 import Navbar from "../../components/Navbar";
 import { useNavigate } from "react-router-dom";
@@ -9,7 +9,7 @@ type Ticket = {
   ticketType: "Service Request" | "Faulty Ticket";
   ticketCreatedBy: string;
   assignedEngineer: string;
-  inquiryType: string;
+  type: string;
   description: string;
   createdAt: string;
   status: string;
@@ -18,55 +18,46 @@ type Ticket = {
 const Pending = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<"service" | "faulty">("service");
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!isSidebarOpen);
-  };
-
+  const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
   const navigate = useNavigate();
 
-  const tickets: Ticket[] = [
-    {
-      id: "#784562",
-      ticketType: "Faulty Ticket",
-      ticketCreatedBy: "Alice Johnson",
-      assignedEngineer: "Engineer A",
-      inquiryType: "Network Issue",
-      description: "User cannot access VPN.",
-      createdAt: "2025-05-28T10:00:00Z",
-      status: "Open",
-    },
-    {
-      id: "#125896",
-      ticketType: "Service Request",
-      ticketCreatedBy: "Bob Smith",
-      assignedEngineer: "Engineer B",
-      inquiryType: "Software Installation",
-      description: "Need to install new version of antivirus.",
-      createdAt: "2025-05-27T15:30:00Z",
-      status: "Open",
-    },
-    {
-      id: "#458965",
-      ticketType: "Faulty Ticket",
-      ticketCreatedBy: "Charlie Davis",
-      assignedEngineer: "Engineer C",
-      inquiryType: "Firewall down or unreachable",
-      description: "Firewall is not reachable since last night.",
-      createdAt: "2025-05-27T11:00:00Z",
-      status: "Open",
-    },
-    {
-      id: "#785236",
-      ticketType: "Faulty Ticket",
-      ticketCreatedBy: "Diana Evans",
-      assignedEngineer: "Engineer D",
-      inquiryType: "VPN connection failure",
-      description: "Users unable to connect to VPN intermittently.",
-      createdAt: "2025-05-26T09:45:00Z",
-      status: "Open",
-    },
-  ];
+  useEffect(() => {
+    const fetchTickets = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const token = localStorage.getItem("cusToken");  // Use your actual token key here
+        if (!token) throw new Error("User not authenticated");
+
+        const response = await fetch("http://localhost:5000/api/customers/ongoing-tickets", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setTickets(data);
+      } catch (err: any) {
+        setError(err.message || "Failed to fetch tickets");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTickets();
+
+    const interval = setInterval(fetchTickets, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const filteredTickets = tickets.filter(
     (ticket) =>
@@ -117,23 +108,27 @@ const Pending = () => {
               </button>
             </div>
 
-            {/* Tickets */}
-            {filteredTickets.length === 0 ? (
+            {loading && <p>Loading tickets...</p>}
+            {error && <p className="text-red-600">Error: {error}</p>}
+
+            {!loading && !error && filteredTickets.length === 0 && (
               <p>No {activeTab === "service" ? "Service Requests" : "Faulty Tickets"} found.</p>
-            ) : (
+            )}
+
+            {!loading && !error && filteredTickets.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filteredTickets.map((ticket) => (
                   <div
-                    onClick={() => navigate("/viewon")}
+                    onClick={() => navigate("/viewon", { state: { ticketId: ticket.id } })}
                     key={ticket.id}
-                    className={`bg-white text-black shadow-md rounded-lg p-6 border-l-8 ${
+                    className={`bg-white text-black shadow-md rounded-lg p-6 border-l-8 cursor-pointer ${
                       ticket.ticketType === "Service Request"
                         ? "border-green-500"
                         : "border-blue-500"
                     }`}
                   >
                     <h2 className="text-xl font-bold mb-1 flex items-center justify-between">
-                      <span>{ticket.id} - {ticket.inquiryType}</span>
+                      <span>{ticket.id} - {ticket.type}</span>
                       <FaTicketAlt className="text-2xl" />
                     </h2>
                     <p className="text-l font-bold text-gray-600 mb-3">{ticket.ticketType}</p>
