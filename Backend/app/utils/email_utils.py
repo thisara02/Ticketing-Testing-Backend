@@ -29,7 +29,7 @@ def send_sr_confirmation_email(user_email, user_name, ticket_id, subject, priori
                 .header {{ background-color: #14b8a6; color: white; padding: 20px; text-align: center; border-radius: 5px; margin-bottom: 20px; }}
                 .content {{ line-height: 1.6; color: #333; }}
                 .ticket-details {{ background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }}
-                .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 12px; }}
+                .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #C70039; font-size: 12px; }}
                 .priority-critical {{ color: #dc2626; font-weight: bold; }}
                 .priority-high {{ color: #ea580c; font-weight: bold; }}
                 .priority-medium {{ color: #ca8a04; font-weight: bold; }}
@@ -135,7 +135,7 @@ def send_ft_confirmation_email(user_email, user_name, ticket_id, subject, priori
                 .header {{ background-color: #1486b8; color: white; padding: 20px; text-align: center; border-radius: 5px; margin-bottom: 20px; }}
                 .content {{ line-height: 1.6; color: #333; }}
                 .ticket-details {{ background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }}
-                .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 12px; }}
+                .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #C70039; font-size: 12px; }}
                 .priority-critical {{ color: #dc2626; font-weight: bold; }}
                 .priority-high {{ color: #ea580c; font-weight: bold; }}
                 .priority-medium {{ color: #ca8a04; font-weight: bold; }}

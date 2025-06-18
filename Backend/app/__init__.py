@@ -24,7 +24,7 @@ def create_app():
     app.config['MAIL_USE_SSL'] = False
     app.config['MAIL_USERNAME'] = 'cyberops.lcs@gmail.com'  # Your email
     app.config['MAIL_PASSWORD'] = 'zieaynrupxmmgvnl'     # Your app password
-    app.config['MAIL_DEFAULT_SENDER'] = 'LankaComm Support<cyberops.lcs@gmail.com>'
+    app.config['MAIL_DEFAULT_SENDER'] = 'LankaCom Support<cyberops.lcs@gmail.com>'
     
     mail.init_app(app)
     

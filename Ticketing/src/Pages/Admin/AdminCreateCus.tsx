@@ -9,7 +9,6 @@ import {
   BuildingOfficeIcon,
   DevicePhoneMobileIcon,
   EnvelopeIcon,
-  MapPinIcon,
   KeyIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
@@ -36,7 +35,6 @@ const AdminCreateCus = () => {
     designation: "",
     mobile: "",
     company: "",
-    address: "",
     password: "",
     confirmPassword: "",
   });
@@ -80,7 +78,6 @@ const AdminCreateCus = () => {
       !formData.designation ||
       !formData.mobile ||
       !formData.company ||
-      !formData.address ||
       !formData.password ||
       !formData.confirmPassword
     ) {
@@ -105,7 +102,6 @@ const AdminCreateCus = () => {
         designation: formData.designation,
         mobile: formData.mobile,
         company: formData.company,
-        address: formData.address,
         password: formData.password,
       };
 
@@ -127,7 +123,6 @@ const AdminCreateCus = () => {
           designation: "",
           mobile: "",
           company: "",
-          address: "",
           password: "",
           confirmPassword: "",
         });
@@ -210,7 +205,6 @@ const AdminCreateCus = () => {
                 { label: "Company", icon: <BuildingOfficeIcon />, name: "company", type: "text" },
                 { label: "Designation", icon: <BriefcaseIcon />, name: "designation", type: "text" },
                 { label: "Mobile", icon: <DevicePhoneMobileIcon />, name: "mobile", type: "text" },
-                { label: "Address", icon: <MapPinIcon />, name: "address", type: "text" },
               ].map((field) => (
                 <div className="relative" key={field.name}>
                   <label className="block mb-2 font-medium text-gray-700">{field.label}</label>

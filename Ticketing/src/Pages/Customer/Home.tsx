@@ -96,7 +96,14 @@ const Home = () => {
     };
 
     fetchTickets();
-    fetchTicketCounts();
+  fetchTicketCounts();
+  function combinedFetch() {
+  fetchTickets();
+  fetchTicketCounts();
+}
+
+const interval = setInterval(combinedFetch, 1000);
+  return () => clearInterval(interval);
   }, []);
 
   const getColors = (type: TicketType) => {

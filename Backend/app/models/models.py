@@ -11,7 +11,6 @@ class Customer(db.Model):
     designation = db.Column(db.String(100))
     mobile = db.Column(db.String(20))
     company = db.Column(db.String(120))
-    address = db.Column(db.String(255))
     password = db.Column(db.String(255), nullable=False)
     subscription = db.Column(db.String(50))
     

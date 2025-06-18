@@ -18,7 +18,6 @@ def register_customer():
         designation = data.get("designation")
         mobile = data.get("mobile")
         company = data.get("company")
-        address = data.get("address")
         password = data.get("password")
         subscription = data.get("subscription", None)
 
@@ -36,7 +35,6 @@ def register_customer():
             designation=designation,
             mobile=mobile,
             company=company,
-            address=address,
             password=hashed_password,
             subscription=subscription
         )
@@ -52,7 +50,6 @@ def register_customer():
             "designation": new_customer.designation,
             "mobile": new_customer.mobile,
             "company": new_customer.company,
-            "address": new_customer.address,
             "subscription": new_customer.subscription,
         }
 
@@ -74,7 +71,6 @@ def get_all_customers():
             "designation": c.designation,
             "mobile": c.mobile,
             "company": c.company,
-            "address": c.address,
             "subscription": c.subscription
         }
         for c in customers
