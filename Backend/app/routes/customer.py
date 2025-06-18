@@ -175,3 +175,96 @@ def get_customer_ongoing_tickets():
     except Exception as e:
         print(f"Error fetching ongoing tickets: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+
+
+@customer_bp.route('/tickets', methods=['GET'])
+def get_customer_tickets():
+    auth_header = request.headers.get("Authorization", None)
+    if not auth_header:
+        return jsonify({"error": "Authorization header missing"}), 401
+
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return jsonify({"error": "Invalid Authorization header format"}), 401
+
+    token = parts[1]
+    try:
+        secret = current_app.config['SECRET_KEY']
+        decoded = jwt.decode(token, secret, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Token expired"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Invalid token"}), 401
+
+    company = decoded.get("company")
+    if not company:
+        return jsonify({"error": "Company not found in token"}), 400
+
+    # Query tickets for this company
+    tickets = Ticket.query.filter(Ticket.requester_company == company).all()
+
+    # Separate tickets by status and type
+    pending = {"service": [], "faulty": []}
+    ongoing = {"service": [], "faulty": []}
+
+    for t in tickets:
+        # Normalize status for comparison
+        status_lower = (t.status or "").lower()
+        type_lower = (t.type or "").lower()
+
+        ticket_data = {
+            "id": t.id,
+            "subject": t.subject,
+            "createdBy": t.requester_name,
+            "type": t.type,
+            "description": t.description,
+            "assignedEngineer": t.engineer_name,
+        }
+
+        if "pending" in status_lower:
+            if "service" in type_lower:
+                pending["service"].append(ticket_data)
+            elif "faulty" in type_lower:
+                pending["faulty"].append(ticket_data)
+        elif "ongoing" in status_lower or "in progress" in status_lower:
+            if "service" in type_lower:
+                ongoing["service"].append(ticket_data)
+            elif "faulty" in type_lower:
+                ongoing["faulty"].append(ticket_data)
+
+    return jsonify({
+        "pending": pending,
+        "ongoing": ongoing
+    })
+
+
+@customer_bp.route('/ticket-counts', methods=['GET'])
+def get_ticket_counts():
+    auth_header = request.headers.get("Authorization", None)
+    if not auth_header:
+        return jsonify({"error": "Authorization header missing"}), 401
+
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return jsonify({"error": "Invalid Authorization header format"}), 401
+
+    token = parts[1]
+    try:
+        secret = current_app.config['SECRET_KEY']
+        decoded = jwt.decode(token, secret, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Token expired"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Invalid token"}), 401
+    
+
+    company = decoded.get("company")
+
+    pending_count = Ticket.query.filter_by(requester_company=company, status="Pending").count()
+    ongoing_count = Ticket.query.filter_by(requester_company=company, status="Ongoing").count()
+
+    return jsonify({
+        "pending": pending_count,
+        "ongoing": ongoing_count
+    })
