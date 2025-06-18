@@ -16,6 +16,7 @@ const CreateSR = () => {
   const [designation, setDesignation] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
+  const [company, setCompany] = useState("");
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("");
@@ -55,6 +56,7 @@ const CreateSR = () => {
         })
         .then((data) => {
           setFullName(data.name || "");
+          setCompany(data.company || "");
           setDesignation(data.designation || "");
           setEmail(data.email || "");
           setMobile(data.mobile || "");
@@ -148,6 +150,14 @@ const CreateSR = () => {
                   value={fullName}
                   readOnly
                   onChange={(e) => setFullName(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-200 text-gray-800 font-jura cursor-not-allowed"
+                />
+                <input
+                  type="text"
+                  placeholder="Company"
+                  value={company}
+                  readOnly
+                  onChange={(e) => setCompany(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-200 text-gray-800 font-jura cursor-not-allowed"
                 />
                 <input

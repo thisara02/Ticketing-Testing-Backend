@@ -13,6 +13,7 @@ const CreateFaultyRequest = () => {
 
   // Form fields
   const [fullName, setFullName] = useState("");
+  const [company, setCompany] = useState("");
   const [designation, setDesignation] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
@@ -55,6 +56,7 @@ const CreateFaultyRequest = () => {
         })
         .then((data) => {
           setFullName(data.name || "");
+          setCompany(data.company || "");
           setDesignation(data.designation || "");
           setEmail(data.email || "");
           setMobile(data.mobile || "");
@@ -150,6 +152,14 @@ const CreateFaultyRequest = () => {
                   value={fullName}
                   readOnly
                   onChange={(e) => setFullName(e.target.value)}
+                  className="cursor-not-allowed w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800 font-jura"
+                />
+                <input
+                  type="text"
+                  placeholder="Company"
+                  value={company}
+                  readOnly
+                  onChange={(e) => setCompany(e.target.value)}
                   className="cursor-not-allowed w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800 font-jura"
                 />
                 <input

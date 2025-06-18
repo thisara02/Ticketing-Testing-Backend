@@ -102,7 +102,7 @@ def cus_login():
     cus = Customer.query.filter_by(email=email).first()
     if cus and cus.check_password(password):
         token = generate_jwt_token(cus)
-        return jsonify({"token": token, "cus": {"id": cus.id, "name": cus.name, "email": cus.email,"mobile": cus.mobile,"designation": cus.designation,}}), 200
+        return jsonify({"token": token, "cus": {"id": cus.id, "name": cus.name, "email": cus.email,"company":cus.company,"mobile": cus.mobile,"designation": cus.designation,}}), 200
 
     return jsonify({"message": "Invalid email or password"}), 401
 
@@ -112,6 +112,7 @@ def generate_jwt_token(cus):
         "id": cus.id,
         "email": cus.email,
         "name": cus.name,
+        "company": cus.company,
         "designation": cus.designation,
         "mobile": cus.mobile,
         "exp": datetime.utcnow() + timedelta(hours=8)

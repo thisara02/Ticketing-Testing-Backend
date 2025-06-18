@@ -47,6 +47,7 @@ class Ticket(db.Model):
     description = db.Column(db.Text)
     priority = db.Column(db.String(50))
     requester_name = db.Column(db.String(120))
+    requester_company = db.Column(db.String(120))
     requester_email = db.Column(db.String(120))
     requester_contact = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

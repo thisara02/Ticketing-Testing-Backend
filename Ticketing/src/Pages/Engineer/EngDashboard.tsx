@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "../../components/EngSide";
 import Navbar from "../../components/EngNav";
 import { TicketIcon } from "lucide-react";
@@ -6,67 +6,35 @@ import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import BannerImage from "../../assets/eng-back.jpg";
 
+interface Ticket {
+  id: string;
+  subject: string;
+  type: string;
+  description: string;
+  priority: string;
+  requester_name: string;
+  requester_company: string;
+  requester_email: string;
+  requester_contact: string;
+  created_at: string;
+}
+
+
 const EngDash = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [pendingRequests, setPendingRequests] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
   const navigate = useNavigate();
 
-  // Dummy ticket counts
-  const totalPendingTickets = 10;
-  const myOngoingTickets = 2;
-
-  // Mock pending tickets
-  const pendingRequests = [
-    {
-      id: "#784562",
-      subject: "VPN Access Issue",
-      customer:"Duosoftware",
-      type: "Faulty Ticket",
-      description: "User is unable to access VPN services since last night.",
-      requesterName: "Thisara Madusanka",
-      requesterEmail: "thisaram@lankacom.net",
-      requesterContact: "0785509917",
-      createdAt: "2025-05-26T09:45:00Z",
-    },
-    {
-      id: "#784545",
-      subject: "VPN Access Issue",
-      customer:"Duosoftware",
-      type: "Faulty Ticket",
-      description: "User is unable to access VPN services since last night.",
-      requesterName: "Thisara Madusanka",
-      requesterEmail: "thisaram@lankacom.net",
-      requesterContact: "0785509917",
-      createdAt: "2025-05-26T09:45:00Z",
-    },
-    {
-      id: "#987654",
-      subject: "Email not syncing",
-      customer:"Duosoftware",
-      type: "Service Request",
-      description: "Outlook is not syncing emails properly.",
-      requesterName: "Kavindu Perera",
-      requesterEmail: "kavindup@lankacom.net",
-      requesterContact: "0771234567",
-      createdAt: "2025-05-28T14:30:00Z",
-    },
-    {
-      id: "#123455",
-      subject: "VPN Access Issue",
-      customer:"Duosoftware",
-      type: "Faulty Ticket",
-      description: "User is unable to access VPN services since last night.",
-      requesterName: "Thisara Madusanka",
-      requesterEmail: "thisaram@lankacom.net",
-      requesterContact: "0785509917",
-      createdAt: "2025-05-26T09:45:00Z",
-    },
-  ];
+  const [totalPendingTickets, setTotalPendingTickets] = useState<number>(0);
+  const [myOngoingTickets, setMyOngoingTickets] = useState<number>(0); // Replace with actual ongoing logic later
 
   const toggleSidebar = () => {
     setSidebarOpen(!isSidebarOpen);
   };
 
-const handleAssign = (id: string) => {
+  const handleAssign = async (id: string) => {
   Swal.fire({
     title: "Assign Ticket",
     text: `Are you sure you want to assign ticket ${id}?`,
@@ -74,28 +42,46 @@ const handleAssign = (id: string) => {
     showCancelButton: true,
     confirmButtonText: "Yes, assign it!",
     cancelButtonText: "Cancel",
-    buttonsStyling: false, // disables default styling
+    buttonsStyling: false,
     customClass: {
       confirmButton: "bg-green-500 text-white px-4 py-2 rounded mr-2",
       cancelButton: "bg-gray-100 text-black px-4 py-2 rounded mr-2",
     },
-  }).then((result) => {
+  }).then(async (result) => {
     if (result.isConfirmed) {
-      Swal.fire({
-        title: "Assigned!",
-        text: `Ticket ${id} has been assigned.`,
-        icon: "success",
-        timer: 1000, // auto-close after 2 seconds
-        showConfirmButton: false, // hides the confirm button
-        buttonsStyling: false,
-      });
+      try {
+        const token = localStorage.getItem("engToken");
+
+        const response = await fetch(`http://localhost:5000/api/ticket/assign/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        Swal.fire({
+          title: "Assigned!",
+          text: `Ticket ${id} has been assigned.`,
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+
+        // Optionally refresh pending tickets list
+        setPendingRequests((prev) => prev.filter((ticket) => ticket.id !== id));
+      } catch (error) {
+        console.error("Error assigning ticket:", error);
+        Swal.fire("Error", "Failed to assign ticket", "error");
+      }
     }
   });
 };
 
-
-
-  // Function to get border color based on type
   const getBorderColor = (type: string) => {
     switch (type) {
       case "Service Request":
@@ -106,6 +92,57 @@ const handleAssign = (id: string) => {
         return "border-yellow-400";
     }
   };
+
+  useEffect(() => {
+  const fetchPendingTickets = async () => {
+    try {
+      const token = localStorage.getItem("engToken");
+      const response = await fetch("http://localhost:5000/api/ticket/pending", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setPendingRequests(data);
+    } catch (error) {
+      console.error("Error fetching pending tickets:", error);
+      Swal.fire("Error", "Failed to load pending tickets", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSummary = async () => {
+      try {
+        const token = localStorage.getItem("engToken");
+        const res = await fetch("http://localhost:5000/api/ticket/summary", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const summary = await res.json();
+        setTotalPendingTickets(summary.total_pending_tickets);
+        setMyOngoingTickets(summary.my_ongoing_tickets);
+      } catch (error) {
+        console.error("Error fetching ticket summary:", error);
+      }
+  };
+
+  fetchPendingTickets();
+  fetchSummary();
+  function combinedFetch() {
+  fetchSummary();
+  fetchPendingTickets();
+}
+
+const interval = setInterval(combinedFetch, 10000);
+  return () => clearInterval(interval);
+}, []);
 
 
   return (
@@ -119,19 +156,25 @@ const handleAssign = (id: string) => {
           <Navbar toggleSidebar={toggleSidebar} />
         </div>
 
-        <div className="flex-1 overflow-y-auto bg-[#DDE6ED]  font-jura">
-         
+        <div className="flex-1 overflow-y-auto bg-[#DDE6ED] font-jura">
           <div
             className="w-full h-80 bg-cover bg-center relative"
             style={{ backgroundImage: `url(${BannerImage})` }}
           >
             <div className="absolute inset-0 bg-black bg-opacity-50 flex pt-20 justify-left pl-8">
               <h1 className="text-white text-4xl font-bold text-left font-jura">
-                Department of<br />Cyber Security Operations<br />Engineer Portal<br />Lanka Communication Services (Pvt.) Ltd
+                Department of
+                <br />
+                Cyber Security Operations
+                <br />
+                Engineer Portal
+                <br />
+                Lanka Communication Services (Pvt.) Ltd
               </h1>
             </div>
           </div>
-           {/* Summary Cards */}
+
+          {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-6 mx-20">
             <div className="bg-white shadow rounded-lg p-6 flex flex-col justify-center items-center">
               <h2 className="text-2xl font-semibold text-gray-800 mb-2">
@@ -152,82 +195,81 @@ const handleAssign = (id: string) => {
             </div>
           </div>
 
-          {/* Heading */}
-          {/* Container with white background */}
+          {/* Pending Tickets Section */}
           <div className="bg-white p-6 rounded shadow mx-20">
-            {/* Heading */}
             <h2 className="text-3xl font-bold text-gray-800 mb-4 flex items-center gap-2 font-jura">
               <TicketIcon className="w-7 h-7" />
               Pending Tickets
             </h2>
 
-            {/* Pending Tickets Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4" >
-              {pendingRequests.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  className={`bg-gray-50 border-l-4  ${getBorderColor(
-                    ticket.type
-                  )} rounded-lg shadow p-6 relative flex flex-col gap-4`}
-                >
-                  {/* Ticket Details */}
-                  <div className="flex-1 grid grid-cols-1 gap-2 text-gray-700">
-                    <div>
-                      <p
-                        className="font-semibold text-red-600 cursor-pointer hover:underline"
-                        onClick={() => navigate("/eng-view-pending")}
-                      >
-                        <span>Ticket ID: </span>
-                        {ticket.id}
-                      </p>
-                      <p className="text-2xl font-bold">
-                        {ticket.customer}
-                      </p>
-                      <p className="text-m font-bold">
-                        <span>Subject: </span>
-                        {ticket.subject}
-                      </p>
-                      <p>
-                        <span className="font-semibold">Type: </span>
-                        {ticket.type}
-                      </p>
-                      <p>
-                        <span className="font-semibold">Description: </span>
-                        {ticket.description}
-                      </p>
+            {loading ? (
+              <p className="text-center text-gray-500 py-10">Loading tickets...</p>
+            ) : pendingRequests.length === 0 ? (
+              <p className="text-center text-gray-500 py-10">No pending tickets found.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {pendingRequests.map((ticket) => (
+                  <div
+                    key={ticket.id}
+                    className={`bg-gray-50 border-l-4 ${getBorderColor(
+                      ticket.type
+                    )} rounded-lg shadow p-6 relative flex flex-col gap-4`}
+                  >
+                    <div className="flex-1 grid grid-cols-1 gap-2 text-gray-700">
+                      <div>
+                        <p
+                          className="font-semibold text-red-600 cursor-pointer hover:underline"
+                          onClick={() => navigate("/eng-view-pending")}
+                        >
+                          <span>Ticket ID: </span>
+                          {ticket.id}
+                        </p>
+                        <p className="text-2xl font-bold">{ticket.requester_company}</p>
+                        <p className="text-m font-bold">
+                          <span>Subject: </span>
+                          {ticket.subject}
+                        </p>
+                        <p>
+                          <span className="font-semibold">Type: </span>
+                          {ticket["type"]}
+                        </p>
+                        <p>
+                          <span className="font-semibold">Description: </span>
+                          {ticket.description}
+                        </p>
+                      </div>
+                      <div>
+                        <p>
+                          <span className="font-semibold">Requester: </span>
+                          {ticket.requester_name}
+                        </p>
+                        <p>
+                          <span className="font-semibold">Email: </span>
+                          {ticket.requester_email}
+                        </p>
+                        <p>
+                          <span className="font-semibold">Contact: </span>
+                          {ticket.requester_contact}
+                        </p>
+                        <p>
+                          <span className="font-semibold">Created At: </span>
+                          {new Date(ticket.created_at).toLocaleString()}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p>
-                        <span className="font-semibold">Requester: </span>
-                        {ticket.requesterName}
-                      </p>
-                      <p>
-                        <span className="font-semibold">Email: </span>
-                        {ticket.requesterEmail}
-                      </p>
-                      <p>
-                        <span className="font-semibold">Contact: </span>
-                        {ticket.requesterContact}
-                      </p>
-                      <p>
-                        <span className="font-semibold">Created At: </span>
-                        {new Date(ticket.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
 
-                  {/* Assign Button */}
-                  <div className="absolute bottom-4 right-4">
-                    <button
-                      onClick={() => handleAssign(ticket.id)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-semibold"
-                    >
-                      Assign
-                    </button>
+                    <div className="absolute bottom-4 right-4">
+                      <button
+                        onClick={() => handleAssign(ticket.id)}
+                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-semibold"
+                      >
+                        Assign
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
