@@ -55,7 +55,7 @@ const Pending = () => {
 
     fetchTickets();
 
-    const interval = setInterval(fetchTickets, 10000);
+    const interval = setInterval(fetchTickets, 30000);
     return () => clearInterval(interval);
   }, []);
 

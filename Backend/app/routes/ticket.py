@@ -7,6 +7,7 @@ from flask import current_app
 import jwt
 from app import db
 from app.models import Ticket
+from app.models import Customer
 from flask_jwt_extended import get_jwt
 from app.utils.email_utils import send_assignment_notification_email
 
@@ -401,8 +402,7 @@ def get_assigned_tickets():
         if not engineer_name:
             return jsonify({'error': 'Invalid token: missing engineer name'}), 401
 
-        tickets = Ticket.query.filter_by(status="Ongoing", engineer_name=engineer_name)\
-                              .order_by(Ticket.created_at.desc()).all()
+        tickets = Ticket.query.filter_by(status="Ongoing", engineer_name=engineer_name).order_by(Ticket.created_at.desc()).all()
 
         ticket_data = []
         for ticket in tickets:
