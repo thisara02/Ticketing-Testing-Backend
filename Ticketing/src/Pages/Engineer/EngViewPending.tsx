@@ -216,7 +216,7 @@ const EngViewPending = () => {
               <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
                 {comments.map((comment) => (
                   <div key={comment.id} className="bg-gray-100 p-3 rounded-md">
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-blue-500">
                        {comment.author}, {new Date(comment.timestamp).toLocaleString()}
                     </p>
                     <p className="text-m text-gray-700 mb-1">{comment.content}</p>

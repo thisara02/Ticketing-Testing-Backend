@@ -101,8 +101,8 @@ const App: React.FC = () => {
       <Route path="/eng-history" element={<EngHistory />} />
       <Route path="/eng-view-closed" element={<EngViewClosed />} />
       <Route path="/eng-view-pending/:ticketId" element={<EngViewPending />} />
-      <Route path="/eng-viewon" element={<EngViewOngoing />} />
-      <Route path="/eng-view-assign" element={<EngViewAssigned />} />
+      <Route path="/eng-viewon/:ticketId" element={<EngViewOngoing />} />
+      <Route path="/eng-view-assign/:ticketId" element={<EngViewAssigned />} />
       <Route path="/eng-close-ticket" element={<EngCloseTicket />} />
       <Route path="/eng-cus-details" element={<EngCustomerDetails />} />
       

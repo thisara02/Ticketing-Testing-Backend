@@ -77,7 +77,7 @@ const EngAssignedTicket = () => {
                       >
                         <p
                           className="text-red-500 font-bold text-xl cursor-pointer hover:underline"
-                          onClick={() => navigate("/eng-view-assign", { state: { ticketId: ticket.id } })}
+                          onClick={() => navigate(`/eng-view-assign/${ticket.id}`)}
                         >
                           Ticket ID : #{ticket.id}
                         </p>
@@ -113,7 +113,7 @@ const EngAssignedTicket = () => {
                       >
                         <p
                           className="text-red-500 font-bold text-xl cursor-pointer hover:underline"
-                          onClick={() => navigate("/eng-view-assign", { state: { ticketId: ticket.id } })}
+                          onClick={() => navigate(`/eng-view-assign/${ticket.id}`)}
                         >
                           Ticket ID : #{ticket.id}
                         </p>
