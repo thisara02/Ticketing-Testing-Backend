@@ -96,14 +96,15 @@ const Home = () => {
     };
 
     fetchTickets();
-  fetchTicketCounts();
-  function combinedFetch() {
-  fetchTickets();
-  fetchTicketCounts();
-}
+    fetchTicketCounts();
+    
+    function combinedFetch() {
+      fetchTickets();
+      fetchTicketCounts();
+    }
 
-const interval = setInterval(combinedFetch, 1000);
-  return () => clearInterval(interval);
+    const interval = setInterval(combinedFetch, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const getColors = (type: TicketType) => {
@@ -200,7 +201,7 @@ const interval = setInterval(combinedFetch, 1000);
                 {ticketsData.pending[pendingTab].map((ticket) => {
                   const colors = getColors(pendingTab);
                   return (
-                    <Link to={`/view-${pendingTab === "service" ? "sr" : "ft"}`} key={ticket.id}>
+                    <Link to={`/view-pending/${ticket.id}`} key={ticket.id}>
                       <div
                         className={`border-l-4 ${colors.borderColor} p-4 rounded shadow bg-white hover:bg-gray-50 mt-5`}
                       >
@@ -250,7 +251,7 @@ const interval = setInterval(combinedFetch, 1000);
                 {ticketsData.ongoing[ongoingTab].map((ticket) => {
                   const colors = getColors(ongoingTab);
                   return (
-                    <Link to={`/create-${ongoingTab === "service" ? "sr" : "ft"}`} key={ticket.id}>
+                    <Link to={`/viewon/${ticket.id}`} key={ticket.id}>
                       <div
                         className={`border-l-4 ${colors.borderColor} p-4 rounded shadow bg-white hover:bg-gray-50 mt-5`}
                       >

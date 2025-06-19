@@ -69,3 +69,14 @@ class Admin(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password, password)
+    
+class Comment(db.Model):
+    __tablename__ = 'comment'
+
+    id = db.Column(db.Integer, primary_key=True)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False)
+    author_name = db.Column(db.String(120), nullable=False)
+    author_role = db.Column(db.String(20), nullable=False)  # 'customer' or 'engineer'
+    message = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    

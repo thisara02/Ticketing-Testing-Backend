@@ -69,9 +69,9 @@ const App: React.FC = () => {
       <Route path="/view-sr" element={<ViewSR />} />
       <Route path="/create-sr" element={<CreateSR />} />
       <Route path="/create-ft" element={<CreateFT />} />
-      <Route path="/viewon" element={<ViewOngoing />} />
+      <Route path="/view-pending/:ticketId" element={<ViewPending />} />
+      <Route path="/viewon/:ticketId" element={<ViewOngoing />} />
       <Route path="/profile" element={<CusProfile />} />
-      <Route path="/view-pending" element={<ViewPending />} />
       <Route path="/forgot-pass" element={<ForgotPassword />} />
       <Route path="/reset-pass" element={<ResetPass />} />
 

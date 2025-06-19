@@ -64,7 +64,7 @@ def send_sr_confirmation_email(user_email, user_name, ticket_id, subject, priori
                     <p>Thank you for your patience.</p>
                     
                     <p>Best regards,<br>
-                    <strong>Technical Support Team</strong></p>
+                    <strong>Cyber Security Operations Team</strong></p>
                 </div>
                 
                 <div class="footer">
@@ -95,7 +95,7 @@ def send_sr_confirmation_email(user_email, user_name, ticket_id, subject, priori
         Thank you for your patience.
 
         Best regards,
-        Technical Support Team
+        Cyber Security Operations Team
         
         ---
         This is an automated message. Please do not reply to this email.
@@ -170,7 +170,7 @@ def send_ft_confirmation_email(user_email, user_name, ticket_id, subject, priori
                     <p>Thank you for your patience.</p>
                     
                     <p>Best regards,<br>
-                    <strong>Technical Support Team</strong></p>
+                    <strong>Cyber Security Operations Team</strong></p>
                 </div>
                 
                 <div class="footer">
@@ -201,7 +201,7 @@ def send_ft_confirmation_email(user_email, user_name, ticket_id, subject, priori
         Thank you for your patience.
 
         Best regards,
-        Technical Support Team
+        Cyber Security Operations Team
         
         ---
         This is an automated message. Please do not reply to this email.
