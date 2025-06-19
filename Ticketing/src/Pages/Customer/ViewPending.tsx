@@ -73,6 +73,8 @@ const ViewPending = () => {
     };
 
     fetchTicketDetails();
+    const interval = setInterval(fetchTicketDetails, 1000);
+    return () => clearInterval(interval);
   }, [ticketId]);
 
   const handlePostComment = async () => {
@@ -202,8 +204,11 @@ const ViewPending = () => {
               <p className="text-gray-600 mt-2 text-m font-medium">
                 <strong>Created At:</strong> {new Date(ticket.created_at).toLocaleString()}
               </p>
-              <p className="text-gray-600 mt-2 text-m font-medium">
+              <p className="text-yellow-600 mt-2 text-m font-medium">
                 <strong>Status:</strong> {ticket.status}
+              </p>
+              <p className="text-black mt-2 text-m font-medium">
+                <strong>*Wait we will assign your ticket soon</strong> 
               </p>
               {ticket.documents && ticket.documents.length > 0 && (
                 <p className="text-gray-600 mt-2 text-m font-medium">

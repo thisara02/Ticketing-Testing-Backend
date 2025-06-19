@@ -1,69 +1,160 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "../../components/Sidebar";
 import Navbar from "../../components/Navbar";
+import { useParams } from "react-router-dom";
+
+interface Ticket {
+  id: string;
+  subject: string;
+  type: string;
+  description: string;
+  requester_name: string;
+  requester_email: string;
+  requester_contact: string;
+  created_at: string;
+  status: string;
+  documents?: string[];
+  engineer_name:string;
+  engineer_contact:string;
+}
+
+interface Comment {
+  id: number;
+  author: string;
+  timestamp: string;
+  content: string;
+  role: string;
+}
 
 const ViewOngoing = () => {
-    const [isSidebarOpen, setSidebarOpen] = useState(true);
-    const [commentText, setCommentText] = useState("");
+const { ticketId } = useParams<{ ticketId: string }>();
+  const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [commentText, setCommentText] = useState("");
+  const [ticket, setTicket] = useState<Ticket | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
+  const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
+  useEffect(() => {
+    const fetchTicketDetails = async () => {
+      if (!ticketId) {
+        setError("Ticket ID not provided");
+        setLoading(false);
+        return;
+      }
 
-    // Sample data
-    const ticket = {
-        id: "#784562",
-        subject: "VPN Access Issue",
-        type: "Faulty Ticket",
-        description: "User is unable to access VPN services since last night.",
-        requesterName: "Thisara Madusanka",
-        requesterEmail: "thisaram@lankacom.net",
-        requesterContact: "0785509917",
-        createdAt: "2025-05-26T09:45:00Z",
-        status: "Ongoing",
-        documents: ["vpn_error_screenshot.png"],
-        engineerName: "Madura Jayasundara",
-        engineerContact: "0740563227",
+      try {
+        const token = localStorage.getItem("cusToken");
+        if (!token) {
+          setError("Authentication token not found");
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(`http://localhost:5000/api/customers/on-tickets/${ticketId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch ticket: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        setTicket(data.ticket);
+        setComments(data.comments || []);
+      } catch (error) {
+        console.error("Error fetching ticket details:", error);
+        setError(error instanceof Error ? error.message : "Failed to load ticket details");
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const comments = [
-        {
-        id: 1,
-        author: "Engineer D",
-        timestamp: "2025-05-26T12:00:00Z",
-        content: "Investigating the VPN gateway issue.",
+    fetchTicketDetails();
+    const interval = setInterval(fetchTicketDetails, 1000);
+    return () => clearInterval(interval);
+  }, [ticketId]);
+
+  const handlePostComment = async () => {
+    if (!commentText.trim()) return;
+
+    try {
+      const token = localStorage.getItem("cusToken");
+      if (!token) {
+        alert("Authentication token not found");
+        return;
+      }
+
+      const response = await fetch(`http://localhost:5000/api/customers/on-tickets/${ticketId}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        {
-        id: 2,
-        author: "Alice Johnson",
-        timestamp: "2025-05-26T14:15:00Z",
-        content: "Please prioritize, it’s impacting work.",
-        },
-        {
-        id: 1,
-        author: "Engineer D",
-        timestamp: "2025-05-26T12:00:00Z",
-        content: "Investigating the VPN gateway issue.",
-        },
-        {
-        id: 2,
-        author: "Alice Johnson",
-        timestamp: "2025-05-26T14:15:00Z",
-        content: "Please prioritize, it’s impacting work.",
-        },
-        {
-        id: 1,
-        author: "Engineer D",
-        timestamp: "2025-05-26T12:00:00Z",
-        content: "Investigating the VPN gateway issue.",
-        },
-        {
-        id: 2,
-        author: "Alice Johnson",
-        timestamp: "2025-05-26T14:15:00Z",
-        content: "Please prioritize, it’s impacting work.",
-        },
-        
-    ];
+        body: JSON.stringify({
+          content: commentText,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to post comment");
+      }
+
+      const newComment = await response.json();
+      setComments([...comments, newComment]);
+      setCommentText("");
+    } catch (error) {
+      console.error("Error posting comment:", error);
+      alert("Failed to post comment. Please try again.");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="h-screen w-screen flex overflow-hidden">
+        <div className="flex-shrink-0">
+          <Sidebar isOpen={isSidebarOpen} />
+        </div>
+        <div className="flex-1 flex flex-col h-screen min-h-0">
+          <Navbar toggleSidebar={toggleSidebar} />
+          <div className="flex-1 flex items-center justify-center bg-gray-100">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading ticket details...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !ticket) {
+    return (
+      <div className="h-screen w-screen flex overflow-hidden">
+        <div className="flex-shrink-0">
+          <Sidebar isOpen={isSidebarOpen} />
+        </div>
+        <div className="flex-1 flex flex-col h-screen min-h-0">
+          <Navbar toggleSidebar={toggleSidebar} />
+          <div className="flex-1 flex items-center justify-center bg-gray-100">
+            <div className="text-center">
+              <p className="text-red-600 text-lg">{error || "Ticket not found"}</p>
+              <button 
+                onClick={() => window.history.back()}
+                className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
     return (
         <div className="h-screen w-screen flex overflow-hidden">
@@ -90,34 +181,37 @@ const ViewOngoing = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div className="bg-gray-50 p-4 rounded-md shadow-sm">
                         <p className="text-sm font-semibold text-gray-500">Requester Name</p>
-                        <p className="text-base font-medium text-gray-800">{ticket.requesterName}</p>
+                        <p className="text-base font-medium text-gray-800">{ticket.requester_name}</p>
                     </div>
 
                     <div className="bg-gray-50 p-4 rounded-md shadow-sm">
                         <p className="text-sm font-semibold text-gray-500">Email</p>
-                        <p className="text-base font-medium text-gray-800">{ticket.requesterEmail}</p>
+                        <p className="text-base font-medium text-gray-800">{ticket.requester_email}</p>
                     </div>
 
                     <div className="bg-gray-50 p-4 rounded-md shadow-sm">
                         <p className="text-sm font-semibold text-gray-500">Contact</p>
-                        <p className="text-base font-medium text-gray-800">{ticket.requesterContact}</p>
+                        <p className="text-base font-medium text-gray-800">{ticket.requester_contact}</p>
                     </div>
                 </div>
                 <p className="text-gray-600 mt-2 text-m font-medium"><strong>Ticket Type:</strong> {ticket.type}</p>
                 <p className="text-red-600 mt-2 text-lg font-medium"><strong>Inquiry Issue :</strong> {ticket.subject}</p>
                 <p className="text-gray-600 mt-2 text-m font-medium"><strong>Description:</strong> {ticket.description}</p>
-                <p className="text-gray-600 mt-2 text-m font-medium"><strong>Created At:</strong> {new Date(ticket.createdAt).toLocaleString()}</p>
-                <p className="text-gray-600 mt-2 text-m font-medium"><strong>Status:</strong> {ticket.status}</p>
-                {ticket.documents.length > 0 && (
-                    <p className="text-gray-600 mt-2 text-m font-medium">
+                <p className="text-gray-600 mt-2 text-m font-medium"><strong>Created At:</strong> {new Date(ticket.created_at).toLocaleString()}</p>
+                <p className="text-green-600 mt-2 text-m font-medium"><strong>Status:</strong> {ticket.status}</p>
+                {(ticket.documents || []).length > 0 && (
+                <p className="text-gray-600 mt-2 text-m font-medium">
                     <strong>Documents:</strong>{" "}
-                    {ticket.documents.map((doc, i) => (
-                        <a key={i} href="#" className="text-blue-600 underline mr-2">{doc}</a>
+                    {(ticket.documents || []).map((doc, i) => (
+                    <a key={i} href="#" className="text-blue-600 underline mr-2">
+                        {doc}
+                    </a>
                     ))}
-                    </p>
+                </p>
                 )}
-                <p className="text-green-600 mt-2 text-m font-medium"><strong>Assigned Engineer : </strong> {ticket.engineerName}</p>
-                <p className="text-green-600 mt-2 text-m font-medium"><strong>Engineer Contact Number :  </strong> {ticket.engineerContact}</p>
+                <p className="text-black mt-2 text-m font-medium"><strong>Your Ticket was assigned by :</strong></p>
+                <p className="text-blue-600 mt-2 text-m font-medium"><strong>Assigned Engineer : </strong> {ticket.engineer_name}</p>
+                <p className="text-blue-600 mt-2 text-m font-medium"><strong>Engineer Contact Number :  </strong> {ticket.engineer_contact}</p>
                 </div>
 
                 {/* Right Section (1/3): Comments */}
@@ -145,12 +239,7 @@ const ViewOngoing = () => {
                     ></textarea>
                     <button
                     className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-400 transition"
-                    onClick={() => {
-                        if (commentText.trim()) {
-                        alert(`Comment posted: ${commentText}`);
-                        setCommentText("");
-                        }
-                    }}
+                    onClick={handlePostComment}
                     >
                     Post Comment
                     </button>
