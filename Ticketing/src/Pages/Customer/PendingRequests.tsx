@@ -119,7 +119,7 @@ const Pending = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filteredTickets.map((ticket) => (
                   <div
-                    onClick={() => navigate("/viewon", { state: { ticketId: ticket.id } })}
+                    onClick={() => navigate(`/viewon/${ticket.id}`)}
                     key={ticket.id}
                     className={`bg-white text-black shadow-md rounded-lg p-6 border-l-8 cursor-pointer ${
                       ticket.ticketType === "Service Request"

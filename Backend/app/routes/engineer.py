@@ -2,7 +2,10 @@ from flask import Blueprint, request, jsonify, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
 from app.models import Engineer
+from app.models import Ticket
+from app.models import Comment
 from datetime import datetime, timedelta
+from pytz import timezone
 import jwt
 from flask_cors import cross_origin
 
@@ -127,3 +130,123 @@ def generate_jwt_token(eng):
     token = jwt.encode(payload, current_app.config["SECRET_KEY"], algorithm="HS256")
     # jwt.encode returns bytes in PyJWT >= 2.0, so decode to str if needed:
     return token if isinstance(token, str) else token.decode('utf-8')
+
+
+@engineer_bp.route('/tickets/<int:ticket_id>', methods=['GET'])
+def get_engineer_ticket_details(ticket_id):
+    auth_header = request.headers.get("Authorization", None)
+    if not auth_header:
+        return jsonify({"error": "Authorization header missing"}), 401
+
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return jsonify({"error": "Invalid Authorization header format"}), 401
+
+    token = parts[1]
+    try:
+        secret = current_app.config['SECRET_KEY']
+        decoded = jwt.decode(token, secret, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Token expired"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Invalid token"}), 401
+
+    # Query the specific ticket for this company
+    ticket = Ticket.query.filter(
+        Ticket.id == ticket_id,
+    ).first()
+
+    if not ticket:
+        return jsonify({"error": "Ticket not found or access denied"}), 404
+
+    # Get comments for this ticket
+    comments = Comment.query.filter(Comment.ticket_id == ticket_id).order_by(Comment.timestamp.asc()).all()
+    comments_data = [{
+        "id": c.id,
+        "author": c.author_name,
+        "timestamp": c.timestamp.isoformat(),
+        "content": c.message,
+        "role": c.author_role
+    } for c in comments]
+
+    ticket_data = {
+        "id": ticket.id,
+        "subject": ticket.subject,
+        "type": ticket.type,
+        "description": ticket.description,
+        "requester_name": ticket.requester_name,
+        "requester_email": ticket.requester_email,
+        "requester_contact": ticket.requester_contact,
+        "created_at": ticket.created_at.isoformat() if ticket.created_at else None,
+        "status": ticket.status,
+        "documents": []  # Add document handling if needed
+    }
+
+    return jsonify({
+        "ticket": ticket_data,
+        "comments": comments_data
+    })
+
+
+@engineer_bp.route('/tickets/<int:ticket_id>/comments', methods=['POST'])
+def eng_add_ticket_comment(ticket_id):
+    auth_header = request.headers.get("Authorization", None)
+    if not auth_header:
+        return jsonify({"error": "Authorization header missing"}), 401
+
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return jsonify({"error": "Invalid Authorization header format"}), 401
+
+    token = parts[1]
+    try:
+        secret = current_app.config['SECRET_KEY']
+        decoded = jwt.decode(token, secret, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Token expired"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Invalid token"}), 401
+
+    customer_name = decoded.get("name", "Customer")  # Get customer name from token
+
+    # Verify ticket exists and belongs to this company
+    ticket = Ticket.query.filter(
+        Ticket.id == ticket_id,
+    ).first()
+
+    if not ticket:
+        return jsonify({"error": "Ticket not found or access denied"}), 404
+
+    data = request.get_json()
+    content = data.get('content', '').strip()
+    
+    if not content:
+        return jsonify({"error": "Comment content is required"}), 400
+
+    try:
+        # Create new comment
+        comment = Comment(
+            ticket_id=ticket_id,
+            author_name=customer_name,
+            author_role='Engineer',
+            message=content,
+            timestamp=datetime.now(timezone('Asia/Colombo'))
+        )
+        
+        db.session.add(comment)
+        db.session.commit()
+
+        # Return the created comment
+        new_comment = {
+            "id": comment.id,
+            "author": comment.author_name,
+            "timestamp": comment.timestamp.isoformat(),
+            "content": comment.message,
+            "role": comment.author_role
+        }
+
+        return jsonify(new_comment), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to create comment"}), 500

@@ -6,6 +6,7 @@ import jwt
 from datetime import datetime, timedelta
 from app.models import Ticket
 from app.models import Comment
+from pytz import timezone
 
 customer_bp = Blueprint("customer", __name__, url_prefix="/api/customers")  # Adjust prefix to match frontend
 
@@ -375,7 +376,7 @@ def add_ticket_comment(ticket_id):
             author_name=customer_name,
             author_role='customer',
             message=content,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(timezone('Asia/Colombo'))
         )
         
         db.session.add(comment)
@@ -506,7 +507,7 @@ def add_onticket_comment(ticket_id):
             author_name=customer_name,
             author_role='Customer',
             message=content,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(timezone('Asia/Colombo'))
         )
         
         db.session.add(comment)
