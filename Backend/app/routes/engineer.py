@@ -1,13 +1,15 @@
+import math
 import random
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
+from app.models import LoginAttempt
 from app import db
 from app.models import Engineer
 from app.models import Customer
 from app.models import Ticket
 from app.models import Comment
-from datetime import datetime, timedelta
-from pytz import timezone
+from datetime import datetime, timedelta, timezone
+import pytz
 import jwt
 from flask_cors import cross_origin
 from app.models import OTPModel
@@ -112,19 +114,104 @@ def delete_engineer(engineer_id):  # Fixed: parameter name matches route
         return jsonify({'error': str(e)}), 500
 
 
+
+
 @engineer_bp.route("/login", methods=["POST"])
 def eng_login():
     data = request.get_json()
     email = data.get("email")
     password = data.get("password")
 
-    # Otherwise, normal DB authentication
+    # Time setup - Use Sri Lankan time throughout
+    tz = pytz.timezone('Asia/Colombo')
+    now = datetime.now(tz)  # Current Sri Lankan time
+    
+    # Convert to naive datetime for database storage (removing timezone info)
+    now_naive = now.replace(tzinfo=None)
+
+    MAX_ATTEMPTS = 3
+    LOCKOUT_DURATION = timedelta(minutes=5)
+    ATTEMPT_WINDOW = timedelta(minutes=15)
+
+    # Fetch previous attempt
+    attempt = LoginAttempt.query.filter_by(email=email).first()
+
+    # --- Check if locked ---
+    if attempt and attempt.locked_until:
+        # Database stores Sri Lankan time as naive datetime
+        # Convert back to aware Sri Lankan time for comparison
+        locked_until_aware = tz.localize(attempt.locked_until)
+        
+        if now < locked_until_aware:
+            remaining_seconds = (locked_until_aware - now).total_seconds()
+            remaining_minutes = math.ceil(remaining_seconds / 60)
+            return jsonify({
+                "message": f"Account locked. Try again in {remaining_minutes} minutes.",
+                "locked_until": attempt.locked_until.strftime("%Y-%m-%d %H:%M:%S") + " (Sri Lanka Time)",
+                "current_time": now_naive.strftime("%Y-%m-%d %H:%M:%S") + " (Sri Lanka Time)"
+            }), 403
+
+    # --- Authenticate user ---
     eng = Engineer.query.filter_by(email=email).first()
     if eng and eng.check_password(password):
+        if attempt:
+            db.session.delete(attempt)
         token = generate_jwt_token(eng)
-        return jsonify({"token": token, "eng": {"id": eng.id, "name": eng.name, "email": eng.email,"mobile": eng.mobile,"designation": eng.designation,}}), 200
+        db.session.commit()
+        return jsonify({
+            "token": token,
+            "eng": {
+                "id": eng.id,
+                "name": eng.name,
+                "email": eng.email,
+                "mobile": eng.mobile,
+                "designation": eng.designation,
+            }
+        }), 200
 
-    return jsonify({"message": "Invalid email or password"}), 401
+    # --- Handle failed login ---
+    if not attempt:
+        # Store Sri Lankan time as naive datetime
+        attempt = LoginAttempt(email=email, failed_attempts=1, last_attempt=now_naive)
+        db.session.add(attempt)
+    else:
+        if attempt.last_attempt:
+            # Convert stored naive datetime back to aware Sri Lankan time
+            last_attempt_aware = tz.localize(attempt.last_attempt)
+            
+            if (now - last_attempt_aware) > ATTEMPT_WINDOW:
+                attempt.failed_attempts = 1
+            else:
+                attempt.failed_attempts += 1
+        else:
+            attempt.failed_attempts += 1
+
+        # Update with current Sri Lankan time
+        attempt.last_attempt = now_naive
+
+        if attempt.failed_attempts >= MAX_ATTEMPTS:
+            # Store lockout time in Sri Lankan time
+            lockout_time = now + LOCKOUT_DURATION
+            attempt.locked_until = lockout_time.replace(tzinfo=None)
+
+    db.session.commit()
+
+    remaining_attempts = max(0, MAX_ATTEMPTS - attempt.failed_attempts)
+    
+    response_data = {
+        "message": "Invalid email or password",
+        "attempts_left": remaining_attempts
+    }
+    
+    # Add timing information in Sri Lankan time
+    if attempt and attempt.last_attempt:
+        response_data["last_attempt"] = attempt.last_attempt.strftime("%Y-%m-%d %H:%M:%S") + " (Sri Lanka Time)"
+    
+    if attempt and attempt.locked_until:
+        response_data["locked_until"] = attempt.locked_until.strftime("%Y-%m-%d %H:%M:%S") + " (Sri Lanka Time)"
+    
+    return jsonify(response_data), 401
+
 
 
 def generate_jwt_token(eng):

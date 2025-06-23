@@ -19,37 +19,49 @@ const EngLogin = () => {
   const [error, setError] = useState("");
 
   // Handle login
-  const handleLogin = async () => {
-    setError("");
-    if (!email || !password) {
-      setError("Please enter email and password");
-      return;
-    }
+const handleLogin = async () => {
+  setError("");
+  if (!email || !password) {
+    setError("Please enter email and password");
+    return;
+  }
 
-    setLoading(true);
-    try {
-      const response = await axios.post("http://localhost:5000/api/engineer/login", {
-        email,
-        password,
-      });
+  setLoading(true);
+  try {
+    const response = await axios.post("http://localhost:5000/api/engineer/login", {
+      email,
+      password,
+    });
 
-      // On success: save token, admin info to localStorage or context
-      localStorage.setItem("engToken", response.data.token);
-      localStorage.setItem("engName", response.data.eng.name);
-      localStorage.setItem("engDesignation", response.data.eng.designation);
-      localStorage.setItem("engMobile", response.data.eng.mobile);
-      // Redirect to admin dashboard
-      navigate("/eng-dash");
-    } catch (err: any) {
-      if (err.response && err.response.status === 401) {
-        setError("Invalid email or password");
-      } else {
-        setError("Server error, please try again later");
-      }
-    } finally {
-      setLoading(false);
+    // On success: save token, engineer info to localStorage or context
+    localStorage.setItem("engToken", response.data.token);
+    localStorage.setItem("engName", response.data.eng.name);
+    localStorage.setItem("engDesignation", response.data.eng.designation);
+    localStorage.setItem("engMobile", response.data.eng.mobile);
+
+    navigate("/eng-dash");
+  } catch (err: any) {
+  if (err.response) {
+    const message = err.response.data?.message || "Error occurred";
+    const attemptsLeft = err.response.data?.attempts_left;
+
+    if (err.response.status === 403) {
+      setError(message); // Account locked
+    } else if (err.response.status === 401) {
+      setError(
+        `${message}${attemptsLeft !== undefined ? ` (${attemptsLeft} attempts left)` : ""}`
+      );
+    } else {
+      setError("Server error, please try again later");
     }
-  };
+  } else {
+    setError("Network error");
+  }
+} finally {
+  setLoading(false);
+}
+};
+
 
   return (
     <motion.div

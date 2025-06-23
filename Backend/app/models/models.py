@@ -1,9 +1,11 @@
 from flask import current_app
 import jwt
+from sqlalchemy import DateTime
 from app import db
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
+from sqlalchemy.dialects.mysql import TIMESTAMP
 
 class Customer(db.Model):
     __tablename__ = 'customer'
@@ -96,4 +98,11 @@ class OTPModel(db.Model):
         s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'], salt="reset-password")
         return s.dumps(self.email)
 
-    
+
+class LoginAttempt(db.Model):
+    __tablename__ = 'login_attempts'
+
+    email = db.Column(db.String(255), primary_key=True)
+    failed_attempts = db.Column(db.Integer, default=0, nullable=False)
+    last_attempt = db.Column(db.DateTime, nullable=True)
+    locked_until = db.Column(db.DateTime, nullable=True) 
