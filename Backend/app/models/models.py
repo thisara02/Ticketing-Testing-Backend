@@ -1,6 +1,9 @@
+from flask import current_app
+import jwt
 from app import db
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
+from itsdangerous import URLSafeTimedSerializer
 
 class Customer(db.Model):
     __tablename__ = 'customer'
@@ -81,4 +84,16 @@ class Comment(db.Model):
     author_role = db.Column(db.String(20), nullable=False)  # 'customer' or 'engineer'
     message = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+class OTPModel(db.Model):
+    __tablename__ = 'otp'
+
+    email = db.Column(db.String(120), primary_key=True)
+    otp = db.Column(db.String(6), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+
+    def generate_reset_token(self):
+        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'], salt="reset-password")
+        return s.dumps(self.email)
+
     

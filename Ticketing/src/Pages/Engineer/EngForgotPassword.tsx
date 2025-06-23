@@ -7,67 +7,64 @@ import Image from "../../assets/back.jpg";
 const EngForgotPass = () => {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [error] = useState<string | null>(null);
+  const [success] = useState<string | null>(null);
   const [showOtpSection, setShowOtpSection] = useState(false);
 
-  const handleSendOtp = () => {
-    if (!email || !email.includes("@")) {
-      setError("Please enter a valid email address.");
+  const handleSendOtp = async () => {
+  try {
+    const res = await fetch("http://localhost:5000/api/engineer/forgot-password/send-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      Swal.fire("Error", data.error || "Cannot send OTP", "error");
       return;
     }
-
-    setError(null);
-    setSuccess("OTP sent! Check your email.");
+    Swal.fire("OTP Sent!", "Check your inbox.", "success");
     setShowOtpSection(true);
+  } catch (err) {
+    Swal.fire("Error", "Server error", "error");
+  }
+};
 
-    Swal.fire({
-      title: "OTP Sent",
-      text: "Check your inbox for the password reset OTP and verify it.",
-      icon: "info",
-      timer: 2000,
-      showConfirmButton: false,
-      customClass: {
-        popup: "swal2-text-black",
-        confirmButton: "swal2-confirm-button",
-        cancelButton: "swal2-cancel-button",
-      },
-    });
-  };
 
   const navigate = useNavigate();
 
-  const handleVerifyOtp = () => {
-    if (!otp) {
-      setError("Please enter the OTP to continue.");
-      setSuccess(null);
-      return;
-    }
-
-    // Simulate OTP verification
-    if (otp === "123456") {
-      setError(null);
-      setSuccess("OTP verified! Proceed to reset your password.");
-
-      setTimeout(() => navigate("/eng-reset"), 2000);
-
-      Swal.fire({
-        title: "OTP Verification Successful!",
-        text: "OTP Verified Successfully",
-        icon: "info",
-        timer: 1500,
-        showConfirmButton: false,
-        customClass: {
-          popup: "swal2-text-black",
-          confirmButton: "swal2-confirm-button",
-          cancelButton: "swal2-cancel-button",
+  const handleVerifyOtp = async () => {
+  try {
+    const res = await fetch("http://localhost:5000/api/engineer/forgot-password/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, otp }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      Swal.fire("Success", "OTP verified", "success");
+      // Navigate with resetToken
+      // After successful OTP verification:
+      localStorage.setItem("resetEmail", email);
+      navigate("/eng-reset", {
+        state: {
+          resetToken: data.resetToken,
+          email: email   // ✅ pass email here too
         },
       });
+    } else if (res.status === 401) {
+      Swal.fire("Invalid OTP", data.error, "error");
+    } else if (res.status === 403) {
+      Swal.fire("Expired OTP", "Please request again", "warning");
+      setTimeout(() => navigate("/eng-login"), 2000);
     } else {
-      setError("Invalid OTP. Please try again.");
-      setSuccess(null);
+      Swal.fire("Error", data.error || "Verification failed", "error");
     }
-  };
+  } catch {
+    Swal.fire("Error", "Server error", "error");
+  }
+};
+
 
   return (
     <div className="relative min-h-screen w-screen flex items-center justify-center font-jura">
