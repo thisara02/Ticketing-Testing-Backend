@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../../components/EngSide";
 import Navbar from "../../components/EngNav";
-import { MdOutlineClose } from "react-icons/md";
 import { useNavigate, useParams } from "react-router-dom";
+import Swal from "sweetalert2";
 
 interface Ticket {
   id: string;
@@ -30,6 +30,8 @@ interface Comment {
 const EngViewAssigned = () => {
 
   const navigate = useNavigate();
+
+  
 
   const { ticketId } = useParams<{ ticketId: string }>();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -161,9 +163,47 @@ const EngViewAssigned = () => {
   }
 
   // Handler for closing the ticket (you can customize with API calls)
-  const handleCloseTicket = () => {
-    navigate("/eng-close-ticket/:ticketId");
-  };
+  const handleCloseTicket = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  const token = localStorage.getItem("engToken");
+  if (!token) {
+    alert("Authentication token missing");
+    return;
+  }
+
+  const rectification_date = (document.querySelector('input[type="datetime-local"]') as HTMLInputElement)?.value;
+  const work_done_comment = (document.querySelector('textarea[placeholder="Add any final notes here..."]') as HTMLTextAreaElement)?.value;
+
+  try {
+    const response = await fetch(`http://localhost:5000/api/ticket/close/${ticketId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ rectification_date, work_done_comment }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to close ticket");
+    }
+
+    Swal.fire({
+          icon: "success",
+          title: `Ticket ${ticket.id} closed successfully!`,
+          showConfirmButton: false,
+          timer: 1000,
+    })
+    .then(() => {
+      navigate("/eng-dash");
+    });// or wherever you want
+  } catch (err) {
+    console.error(err);
+    alert("Error closing ticket");
+  }
+};
+
 
   return (
     <div className="h-screen w-screen flex overflow-hidden">
@@ -248,13 +288,13 @@ const EngViewAssigned = () => {
               </p> */}
 
               {/* Close Ticket Button below Ticket Details */}
-              <button
+              {/* <button
                 onClick={handleCloseTicket}
                 className="mt-20  w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-md transition bottom-1"
               >
                 <MdOutlineClose className="h-6 w-6" />
                 Close this Ticket
-              </button>
+              </button> */}
             </div>
 
             {/* Right Section (1/3): Comments */}
@@ -292,6 +332,51 @@ const EngViewAssigned = () => {
               </div>
             </div>
           </div>
+
+          {/* Close Ticket Section */}
+          <form
+              className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12"
+              onSubmit={handleCloseTicket}
+            >
+              {/* Left Column */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Actual Rectification Date and Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    required
+                    className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-black [color-scheme:light]"
+                  />
+                </div>
+              </div>
+
+              {/* Right Column */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Work Done Comments
+                  </label>
+                  <textarea
+                    required
+                    className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white text-black"
+                    rows={4}
+                    placeholder="Add any final notes here..."
+                  />
+                </div>
+              </div>
+
+              {/* Full-width Close button spanning both columns */}
+              <div className="md:col-span-2 flex justify-center">
+                <button
+                  type="submit"
+                  className="w-1/2 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Close Ticket
+                </button>
+              </div>
+            </form>
         </div>
       </div>
     </div>

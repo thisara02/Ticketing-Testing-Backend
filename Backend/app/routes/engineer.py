@@ -170,7 +170,7 @@ def get_engineer_ticket_details(ticket_id):
     } for c in comments]
 
     ticket_data = {
-        "id": ticket.id,
+        "id": f"#{ticket.id:06d}",
         "subject": ticket.subject,
         "type": ticket.type,
         "description": ticket.description,
@@ -289,7 +289,7 @@ def get_engineer_onticket_details(ticket_id):
     } for c in comments]
 
     ticket_data = {
-        "id": ticket.id,
+        "id": f"#{ticket.id:06d}",
         "subject": ticket.subject,
         "type": ticket.type,
         "description": ticket.description,

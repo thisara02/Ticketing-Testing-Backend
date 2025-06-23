@@ -55,6 +55,8 @@ class Ticket(db.Model):
     documents = db.Column(db.Text)  # Store file URLs or paths as comma-separated strings
     engineer_name = db.Column(db.String(120))
     engineer_contact = db.Column(db.String(20))
+    work_done_comment = db.Column(db.Text)
+    rectification_date = db.Column(db.DateTime, nullable=True)
 
 
 class Admin(db.Model):

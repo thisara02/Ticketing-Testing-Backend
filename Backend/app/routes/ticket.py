@@ -10,6 +10,7 @@ from app.models import Ticket
 from app.models import Customer
 from flask_jwt_extended import get_jwt
 from app.utils.email_utils import send_assignment_notification_email
+from pytz import timezone
 
 ticket_bp = Blueprint("ticket", __name__, url_prefix="/api/ticket")
 
@@ -265,7 +266,7 @@ def get_pending_tickets():
         tickets_data = []
         for ticket in pending_tickets:
             tickets_data.append({
-                "id": ticket.id,
+                "id": f"#{ticket.id:06d}",
                 "subject": ticket.subject,
                 "type": ticket.type,
                 "description": ticket.description,
@@ -422,4 +423,81 @@ def get_assigned_tickets():
     except Exception as e:
         print(f"Error fetching assigned tickets: {str(e)}")
         return jsonify({'error': str(e)}), 500
+    
+    
+@ticket_bp.route('/close/<int:ticket_id>', methods=['POST'])
+def close_ticket(ticket_id):
+    try:
+        secret = current_app.config['SECRET_KEY']
+        token = request.headers.get("Authorization", None)
+        if not token:
+            return jsonify({"error": "Authorization header missing"}), 401
 
+        parts = token.split()
+        if len(parts) != 2 or parts[0].lower() != "bearer":
+            return jsonify({"error": "Invalid Authorization header format"}), 401
+
+        token = parts[1]
+        try:
+            decoded = jwt.decode(token, secret, algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            return jsonify({"error": "Token expired"}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid token"}), 401
+
+        # Get and validate form data
+        data = request.get_json()
+        rectification_date_str = data.get("rectification_date")
+        work_done_comment = data.get("work_done_comment", "").strip()
+
+        if not rectification_date_str or not work_done_comment:
+            return jsonify({"error": "All fields are required"}), 400
+
+        try:
+            rectification_date = datetime.fromisoformat(rectification_date_str)
+        except ValueError:
+            return jsonify({"error": "Invalid datetime format"}), 400
+
+        # Fetch the ticket
+        ticket = Ticket.query.get(ticket_id)
+        if not ticket:
+            return jsonify({"error": "Ticket not found"}), 404
+
+        # Update fields
+        ticket.rectification_date = rectification_date
+        ticket.work_done_comment = work_done_comment
+        ticket.status = "Closed"  # ✅ Set status to Closed
+        ticket.closed_at = datetime.now(timezone("Asia/Colombo"))
+
+        db.session.commit()
+
+        return jsonify({"message": "Ticket closed successfully"}), 200
+
+    except Exception as e:
+        print(f"Error closing ticket: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@ticket_bp.route('/history/all', methods=['GET'])
+def get_all_ticket_history():
+    try:
+        tickets = Ticket.query.order_by(Ticket.created_at.desc()).all()
+
+        ticket_list = []
+        for ticket in tickets:
+            ticket_list.append({
+                "id": f"#{ticket.id:06d}",
+                "Company": ticket.requester_company,
+                "subject": ticket.subject,
+                "ticketType": ticket.type,
+                "description": ticket.description,
+                "createdDate": ticket.created_at.strftime("%Y/%m/%d %H:%M"),
+                "assignedEngineer": ticket.engineer_name if ticket.engineer_name else None,
+                "status": ticket.status
+            })
+
+        return jsonify(ticket_list), 200
+
+    except Exception as e:
+        print("Error fetching ticket history:", str(e))
+        return jsonify({"error": "Internal server error"}), 500
