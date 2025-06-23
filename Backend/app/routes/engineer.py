@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
 from app.models import Engineer
+from app.models import Customer
 from app.models import Ticket
 from app.models import Comment
 from datetime import datetime, timedelta
@@ -372,3 +373,27 @@ def eng_add_onticket_comment(ticket_id):
         db.session.rollback()
         return jsonify({"error": "Failed to create comment"}), 500
     
+
+@engineer_bp.route('/customers/grouped', methods=['GET', 'OPTIONS'])
+def get_grouped_customers():
+    try:
+        customers = Customer.query.all()
+
+        grouped_data = {}
+        for customer in customers:
+            company = customer.company or "Unknown"
+            if company not in grouped_data:
+                grouped_data[company] = []
+
+            grouped_data[company].append({
+                "name": customer.name,
+                "designation": customer.designation,
+                "mobile": customer.mobile,
+                "email": customer.email
+            })
+
+        return jsonify(grouped_data), 200
+
+    except Exception as e:
+        print(f"Error fetching grouped customers: {e}")
+        return jsonify({"error": "Internal server error"}), 500
