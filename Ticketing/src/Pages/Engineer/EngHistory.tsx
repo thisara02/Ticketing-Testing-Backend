@@ -132,11 +132,11 @@ const EngHistory = () => {
                     key={`${ticket.id}-${ticket.status}`}
                     onClick={() => {
                       if (ticket.status === "Pending") {
-                        navigate("/eng-view-pending", { state: { ticketId: ticket.id } });
+                        navigate(`/eng-view-pending/${ticket.id}`);
                       } else if (ticket.status === "Ongoing") {
-                        navigate("/eng-viewon", { state: { ticketId: ticket.id } });
+                        navigate(`/eng-viewon/${ticket.id}`);
                       } else if (ticket.status === "Closed") {
-                        navigate("/eng-view-closed", { state: { ticketId: ticket.id } });
+                        navigate(`/eng-view-closed/${ticket.id}`);
                       }
                     }}
                     className={`bg-white p-6 rounded-lg shadow border-l-8 ${getBorderColor(

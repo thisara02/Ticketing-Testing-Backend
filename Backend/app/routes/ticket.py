@@ -486,7 +486,7 @@ def get_all_ticket_history():
         ticket_list = []
         for ticket in tickets:
             ticket_list.append({
-                "id": f"#{ticket.id:06d}",
+                "id": f"{ticket.id:06d}",
                 "Company": ticket.requester_company,
                 "subject": ticket.subject,
                 "ticketType": ticket.type,

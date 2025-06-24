@@ -101,7 +101,7 @@ const App: React.FC = () => {
       <Route path="/eng-notifi" element={<EngNotification />} />
       <Route path="/eng-myticket" element={<EngAssignedTicket />} />
       <Route path="/eng-history" element={<EngHistory />} />
-      <Route path="/eng-view-closed" element={<EngViewClosed />} />
+      <Route path="/eng-view-closed/:ticketId" element={<EngViewClosed />} />
       <Route path="/eng-view-pending/:ticketId" element={<EngViewPending />} />
       <Route path="/eng-viewon/:ticketId" element={<EngViewOngoing />} />
       <Route path="/eng-view-assign/:ticketId" element={<EngViewAssigned />} />
