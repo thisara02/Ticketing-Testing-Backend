@@ -70,6 +70,9 @@ class Admin(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     mobile = db.Column(db.String(15), nullable=False)
     password = db.Column(db.String(128), nullable=False)
+    otp = db.Column(db.String(6))
+    otp_expiry = db.Column(db.DateTime)
+
 
     def set_password(self, password):
         self.password = generate_password_hash(password)

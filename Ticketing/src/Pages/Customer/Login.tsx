@@ -41,14 +41,25 @@ const Login = () => {
       localStorage.setItem("cusMobile", response.data.cus.company);
       navigate("/home");
     } catch (err: any) {
-      if (err.response && err.response.status === 401) {
-        setError("Invalid email or password");
-      } else {
-        setError("Server error, please try again later");
-      }
-    } finally {
-      setLoading(false);
+  if (err.response) {
+    const message = err.response.data?.message || "Error occurred";
+    const attemptsLeft = err.response.data?.attempts_left;
+
+    if (err.response.status === 403) {
+      setError(message); // Account locked
+    } else if (err.response.status === 401) {
+      setError(
+        `${message}${attemptsLeft !== undefined ? ` (${attemptsLeft} attempts left)` : ""}`
+      );
+    } else {
+      setError("Server error, please try again later");
     }
+  } else {
+    setError("Network error");
+  }
+} finally {
+  setLoading(false);
+}
   };
 
   return (

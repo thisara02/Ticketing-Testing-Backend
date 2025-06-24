@@ -348,6 +348,63 @@ def send_otp_email(user_email, otp_code):
         print(f"Failed to send OTP email: {e}")
         return False
 
+def send_admin_otp_email(user_email, otp_code):
+    """Send OTP email for password reset verification"""
+    try:
+        msg = Message(
+            subject="Your OTP for Password Reset",
+            recipients=[user_email],
+            sender=current_app.config['MAIL_DEFAULT_SENDER']
+        )
+
+        # HTML content
+        msg.html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; background-color: #f9fafb; padding: 20px; }}
+                .container {{ background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }}
+                .otp {{ font-size: 28px; font-weight: bold; color: #10b981; margin: 20px 0; }}
+                .footer {{ margin-top: 30px; font-size: 12px; color: #888; text-align: center; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>Password Reset OTP</h2>
+                <p>Hello,</p>
+                <p>You requested to reset your password. Use the OTP below to proceed. This OTP is valid for <strong>5 minutes</strong>.</p>
+                <div class="otp">{otp_code}</div>
+                <p>If you did not request this, please ignore this message.</p>
+                <div class="footer">
+                    This is an automated email. Please do not reply.
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        # Plain text fallback
+        msg.body = f"""
+        Hello,
+
+        Your OTP for password reset is: {otp_code}
+
+        It is valid for 5 minutes. If you didn't request this, please ignore this email.
+
+        - Cyber Security Operations
+        """
+
+        thread = threading.Thread(
+            target=send_async_email,
+            args=(current_app._get_current_object(), msg)
+        )
+        thread.start()
+
+        return True
+    except Exception as e:
+        print(f"Failed to send OTP email: {e}")
+        return False
 
 # Import datetime at the top of the file
 from datetime import datetime

@@ -20,35 +20,41 @@ const AdminLogin = () => {
 
   // Handle login
   const handleLogin = async () => {
-    setError("");
-    if (!email || !password) {
-      setError("Please enter email and password");
-      return;
-    }
+  setError("");
+  if (!email || !password) {
+    setError("Please enter email and password");
+    return;
+  }
 
-    setLoading(true);
-    try {
-      const response = await axios.post("http://localhost:5000/api/admin/login", {
-        email,
-        password,
-      });
+  setLoading(true);
+  try {
+    const response = await axios.post("http://localhost:5000/api/admin/login", {
+      email,
+      password,
+    });
 
-      // On success: save token, admin info to localStorage or context
+    if (response.data.bypass_otp) {
+      // Maintainer: direct login
       localStorage.setItem("adminToken", response.data.token);
       localStorage.setItem("adminName", response.data.admin.name);
       localStorage.setItem("adminMobile", response.data.admin.mobile);
-      // Redirect to admin dashboard
       navigate("/admin-dash");
-    } catch (err: any) {
-      if (err.response && err.response.status === 401) {
-        setError("Invalid email or password");
-      } else {
-        setError("Server error, please try again later");
-      }
-    } finally {
-      setLoading(false);
+    } else {
+      // Normal admin: go to OTP verification page
+      localStorage.setItem("pendingAdminId", response.data.admin_id);
+      navigate("/admin-otp");
     }
-  };
+  } catch (err: any) {
+    if (err.response && err.response.status === 401) {
+      setError("Invalid email or password");
+    } else {
+      setError("Server error, please try again later");
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <motion.div

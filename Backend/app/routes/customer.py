@@ -1,4 +1,6 @@
+import math
 from flask import Blueprint, request, jsonify, current_app
+import pytz
 from app import db
 from app.models import Customer
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -7,6 +9,7 @@ from datetime import datetime, timedelta
 from app.models import Ticket
 from app.models import Comment
 from pytz import timezone
+from app.models import LoginAttempt
 
 customer_bp = Blueprint("customer", __name__, url_prefix="/api/customers")  # Adjust prefix to match frontend
 
@@ -97,13 +100,95 @@ def cus_login():
     email = data.get("email")
     password = data.get("password")
 
-    # Otherwise, normal DB authentication
+    # Time setup - Use Sri Lankan time throughout
+    tz = pytz.timezone('Asia/Colombo')
+    now = datetime.now(tz)  # Current Sri Lankan time
+    
+    # Convert to naive datetime for database storage (removing timezone info)
+    now_naive = now.replace(tzinfo=None)
+
+    MAX_ATTEMPTS = 3
+    LOCKOUT_DURATION = timedelta(minutes=5)
+    ATTEMPT_WINDOW = timedelta(minutes=15)
+
+    # Fetch previous attempt
+    attempt = LoginAttempt.query.filter_by(email=email).first()
+
+    # --- Check if locked ---
+    if attempt and attempt.locked_until:
+        # Database stores Sri Lankan time as naive datetime
+        # Convert back to aware Sri Lankan time for comparison
+        locked_until_aware = tz.localize(attempt.locked_until)
+        
+        if now < locked_until_aware:
+            remaining_seconds = (locked_until_aware - now).total_seconds()
+            remaining_minutes = math.ceil(remaining_seconds / 60)
+            return jsonify({
+                "message": f"Account locked. Try again in {remaining_minutes} minutes.",
+                "locked_until": attempt.locked_until.strftime("%Y-%m-%d %H:%M:%S") + " (Sri Lanka Time)",
+                "current_time": now_naive.strftime("%Y-%m-%d %H:%M:%S") + " (Sri Lanka Time)"
+            }), 403
+
+    # --- Authenticate user ---
     cus = Customer.query.filter_by(email=email).first()
     if cus and cus.check_password(password):
+        if attempt:
+            db.session.delete(attempt)
         token = generate_jwt_token(cus)
-        return jsonify({"token": token, "cus": {"id": cus.id, "name": cus.name, "email": cus.email,"company":cus.company,"mobile": cus.mobile,"designation": cus.designation,}}), 200
+        db.session.commit()
+        return jsonify({
+            "token": token,
+            "eng": {
+                "id": cus.id,
+                "name": cus.name,
+                "email":cus.email,
+                "mobile": cus.mobile,
+                "designation": cus.designation,
+            }
+        }), 200
 
-    return jsonify({"message": "Invalid email or password"}), 401
+    # --- Handle failed login ---
+    if not attempt:
+        # Store Sri Lankan time as naive datetime
+        attempt = LoginAttempt(email=email, failed_attempts=1, last_attempt=now_naive)
+        db.session.add(attempt)
+    else:
+        if attempt.last_attempt:
+            # Convert stored naive datetime back to aware Sri Lankan time
+            last_attempt_aware = tz.localize(attempt.last_attempt)
+            
+            if (now - last_attempt_aware) > ATTEMPT_WINDOW:
+                attempt.failed_attempts = 1
+            else:
+                attempt.failed_attempts += 1
+        else:
+            attempt.failed_attempts += 1
+
+        # Update with current Sri Lankan time
+        attempt.last_attempt = now_naive
+
+        if attempt.failed_attempts >= MAX_ATTEMPTS:
+            # Store lockout time in Sri Lankan time
+            lockout_time = now + LOCKOUT_DURATION
+            attempt.locked_until = lockout_time.replace(tzinfo=None)
+
+    db.session.commit()
+
+    remaining_attempts = max(0, MAX_ATTEMPTS - attempt.failed_attempts)
+    
+    response_data = {
+        "message": "Invalid email or password",
+        "attempts_left": remaining_attempts
+    }
+    
+    # Add timing information in Sri Lankan time
+    if attempt and attempt.last_attempt:
+        response_data["last_attempt"] = attempt.last_attempt.strftime("%Y-%m-%d %H:%M:%S") + " (Sri Lanka Time)"
+    
+    if attempt and attempt.locked_until:
+        response_data["locked_until"] = attempt.locked_until.strftime("%Y-%m-%d %H:%M:%S") + " (Sri Lanka Time)"
+    
+    return jsonify(response_data), 401
 
 
 def generate_jwt_token(cus):

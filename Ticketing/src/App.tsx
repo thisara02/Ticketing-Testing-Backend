@@ -34,6 +34,7 @@ import AdminResetPass from "./Pages/Admin/AdminResetPassword"
 import AdminViewPending from "./Pages/Admin/AdminViewPending"
 import AdminViewClosed from "./Pages/Admin/AdminViewClosed"
 import AdminViewOngoing from "./Pages/Admin/AdminViewOngoing"
+import AdminOtp from "./Pages/Admin/AdminOtp";
 import EngDash from "./Pages/Engineer/EngDashboard"
 import EngForgotPass from "./Pages/Engineer/EngForgotPassword"
 import EngResetPass from "./Pages/Engineer/EngResetPassword"
@@ -89,6 +90,7 @@ const App: React.FC = () => {
       <Route path="/admin-view-closed" element={<AdminViewClosed />} />
       <Route path="/admin-view-pending" element={<AdminViewPending />} />
       <Route path="/admin-viewon" element={<AdminViewOngoing />} />
+      <Route path="/admin-otp" element={<AdminOtp />} />
       
 
       <Route path="/eng-login" element={<EngLogin />} />

@@ -4,7 +4,8 @@ from app.models import Admin
 import jwt
 from datetime import datetime, timedelta
 from werkzeug.security import check_password_hash
-import datetime
+import random
+from app.utils.email_utils import send_admin_otp_email
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
 
@@ -65,22 +66,35 @@ def admin_login():
     email = data.get("email")
     password = data.get("password")
 
-    # Check if this is the hardcoded maintainer login
+    # 🔐 Maintainer login (bypass OTP)
     if email == "maintainer@gmail.com" and password == "maintainer@123456":
-        # Return a dummy token or special token for maintainer
-        token = generate_jwt_token_for_maintainer()  # You can create a special token or just a fixed string
+        token = generate_jwt_token_for_maintainer()
         maintainer_info = {
             "id": 0,
             "name": "Maintainer Super Admin",
             "email": "maintainer@gmail.com"
         }
-        return jsonify({"token": token, "admin": maintainer_info}), 200
+        return jsonify({
+            "token": token,
+            "admin": maintainer_info,
+            "bypass_otp": True  # ✅ Used by frontend to skip OTP screen
+        }), 200
 
-    # Otherwise, normal DB authentication
+    # 🔐 Normal Admin login
     admin = Admin.query.filter_by(email=email).first()
     if admin and admin.check_password(password):
-        token = generate_jwt_token(admin)
-        return jsonify({"token": token, "admin": {"id": admin.id, "name": admin.name, "email": admin.email,"mobile": admin.mobile,}}), 200
+        otp = str(random.randint(100000, 999999))
+        admin.otp = otp
+        admin.otp_expiry = datetime.utcnow() + timedelta(minutes=5)
+        db.session.commit()
+
+        send_admin_otp_email(email, otp)
+
+        return jsonify({
+            "message": "OTP sent to your email",
+            "admin_id": admin.id,
+            "bypass_otp": False  # ✅ Used by frontend
+        }), 200
 
     return jsonify({"message": "Invalid email or password"}), 401
 
@@ -91,7 +105,8 @@ def generate_jwt_token(admin):
         "email": admin.email,
         "name": admin.name,
         "mobile": admin.mobile,
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=8)
+        "exp": datetime.utcnow() + timedelta(hours=8)
+
     }
     token = jwt.encode(payload, current_app.config["SECRET_KEY"], algorithm="HS256")
     # jwt.encode returns bytes in PyJWT >= 2.0, so decode to str if needed:
@@ -103,11 +118,44 @@ def generate_jwt_token_for_maintainer():
         "id": 0,
         "email": "maintainer",
         "name": "Maintainer Super Admin",
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=8),
+        "exp": datetime.utcnow() + timedelta(hours=8),
         "role": "maintainer"
     }
     token = jwt.encode(payload, current_app.config["SECRET_KEY"], algorithm="HS256")
     return token if isinstance(token, str) else token.decode('utf-8')
 
+@admin_bp.route("/verify-otp", methods=["POST"])
+def verify_otp():
+    data = request.get_json()
+    admin_id = data.get("admin_id")
+    otp = data.get("otp")
+
+    admin = Admin.query.get(admin_id)
+    if not admin or not admin.otp or not admin.otp_expiry:
+        return jsonify({"message": "Invalid OTP session"}), 400
+
+    if admin.otp != otp:
+        return jsonify({"message": "Incorrect OTP"}), 401
+
+    if datetime.utcnow() > admin.otp_expiry:
+        return jsonify({"message": "OTP expired"}), 403
+
+    # OTP is valid
+    token = generate_jwt_token(admin)
+    
+    # Clear OTP
+    admin.otp = None
+    admin.otp_expiry = None
+    db.session.commit()
+
+    return jsonify({
+        "token": token,
+        "admin": {
+            "id": admin.id,
+            "name": admin.name,
+            "email": admin.email,
+            "mobile": admin.mobile,
+        }
+    }), 200
 
 
