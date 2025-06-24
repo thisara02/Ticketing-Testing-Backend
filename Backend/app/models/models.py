@@ -35,6 +35,7 @@ class Engineer(db.Model):
     mobile = db.Column(db.String(20))
     designation = db.Column(db.String(100))
     password = db.Column(db.String(255), nullable=False)
+    profile_image = db.Column(db.String(255), nullable=True) 
     
     def set_password(self, password):
         self.password = generate_password_hash(password)

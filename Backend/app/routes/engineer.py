@@ -1,7 +1,9 @@
 import math
+import os
 import random
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from app.models import LoginAttempt
 from app import db
 from app.models import Engineer
@@ -18,6 +20,7 @@ from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 
 engineer_bp = Blueprint('engineer', __name__, url_prefix='/api/engineer')
+
 
 def get_serializer():
     return URLSafeTimedSerializer(current_app.config['SECRET_KEY'], salt="reset-password")
@@ -602,3 +605,118 @@ def reset_password():
     except Exception as e:
         print(f"Error in reset_password: {e}")
         return jsonify({"error": "Internal server error"}), 500
+    
+    
+def get_user_id_from_token():
+    auth_header = request.headers.get("Authorization", None)
+    if not auth_header:
+        return None, jsonify({"error": "Authorization header missing"}), 401
+
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return None, jsonify({"error": "Invalid Authorization header format"}), 401
+
+    token = parts[1]
+    try:
+        decoded = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
+        print("Decoded JWT payload:", decoded)
+        user_id = decoded.get("id")
+        print("Engineer ID from token:", user_id)
+        return user_id, None, None
+    except jwt.ExpiredSignatureError:
+        return None, jsonify({"error": "Token expired"}), 401
+    except jwt.InvalidTokenError:
+        return None, jsonify({"error": "Invalid token"}), 401
+
+@engineer_bp.route('/profile', methods=['GET'])
+def get_profile():
+    engineer_id, error_response, status = get_user_id_from_token()
+    print("Engineer ID from token:", engineer_id)
+
+    if error_response:
+        print("Error in token:", error_response)
+        return error_response, status
+
+    engineer = Engineer.query.get(engineer_id)
+    print("Engineer query result:", engineer)
+    if not engineer:
+        return jsonify({"error": "Engineer not found"}), 404
+
+    return jsonify({
+        "id": engineer.id,
+        "name": engineer.name,
+        "email": engineer.email,
+        "mobile": engineer.mobile,
+        "designation": engineer.designation,
+        "profile_image": engineer.profile_image or None
+    })
+
+from flask import request, jsonify, current_app
+from werkzeug.utils import secure_filename
+import os
+
+@engineer_bp.route('/profile', methods=['PUT'])
+def update_profile():
+    engineer_id, error_response, status = get_user_id_from_token()
+    if error_response:
+        return error_response, status
+
+    engineer = Engineer.query.get(engineer_id)
+    if not engineer:
+        return jsonify({"error": "Engineer not found"}), 404
+
+    data = request.form
+    name = data.get("name")
+    mobile = data.get("mobilep")
+    designation = data.get("designation")
+
+    if not name or not mobile or not designation:
+        return jsonify({"error": "Missing required fields"}), 400
+
+    engineer.name = name
+    engineer.mobile = mobile
+    engineer.designation = designation
+
+    if 'profile_image' in request.files:
+        file = request.files['profile_image']
+        filename = secure_filename(file.filename)
+        upload_folder = current_app.config['UPLOAD_FOLDER']
+        file.save(os.path.join(upload_folder, filename))
+        engineer.profile_image = filename
+
+    db.session.commit()
+    return jsonify({"message": "Profile updated successfully"})
+
+
+@engineer_bp.route('/change-password', methods=['POST'])
+def change_password():
+    engineer_id, error_response, status = get_user_id_from_token()
+    if error_response:
+        return error_response, status
+
+    engineer = Engineer.query.get(engineer_id)
+    if not engineer:
+        return jsonify({"error": "Engineer not found"}), 404
+
+    data = request.get_json()
+    old_password = data.get("oldPassword")
+    new_password = data.get("newPassword")
+
+    if not old_password or not new_password:
+        return jsonify({"error": "Missing passwords"}), 400
+
+    if not engineer.check_password(old_password):
+        return jsonify({"error": "Old password is incorrect"}), 401
+
+    import re
+    if (len(new_password) < 8 or
+        not re.search(r'[A-Z]', new_password) or
+        not re.search(r'[a-z]', new_password) or
+        not re.search(r'[0-9]', new_password) or
+        not re.search(r'[!@#$%^&*]', new_password)):
+        return jsonify({"error": "New password does not meet complexity requirements"}), 400
+
+    engineer.set_password(new_password)
+    db.session.commit()
+
+    return jsonify({"message": "Password changed successfully"})
