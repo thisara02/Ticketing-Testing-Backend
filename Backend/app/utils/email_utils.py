@@ -352,7 +352,7 @@ def send_admin_otp_email(user_email, otp_code):
     """Send OTP email for password reset verification"""
     try:
         msg = Message(
-            subject="Your OTP for Password Reset",
+            subject="Your OTP for Admin Login Verification",
             recipients=[user_email],
             sender=current_app.config['MAIL_DEFAULT_SENDER']
         )
@@ -371,9 +371,9 @@ def send_admin_otp_email(user_email, otp_code):
         </head>
         <body>
             <div class="container">
-                <h2>Password Reset OTP</h2>
+                <h2>Admin Login Verification OTP</h2>
                 <p>Hello,</p>
-                <p>You requested to reset your password. Use the OTP below to proceed. This OTP is valid for <strong>5 minutes</strong>.</p>
+                <p>You requested to login as an admin. Use the OTP below to proceed. This OTP is valid for <strong>5 minutes</strong>.</p>
                 <div class="otp">{otp_code}</div>
                 <p>If you did not request this, please ignore this message.</p>
                 <div class="footer">

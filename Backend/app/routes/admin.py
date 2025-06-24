@@ -3,11 +3,18 @@ from app import db
 from app.models import Admin
 import jwt
 from datetime import datetime, timedelta
-from werkzeug.security import check_password_hash
+from werkzeug.security import generate_password_hash
 import random
 from app.utils.email_utils import send_admin_otp_email
+from app.models import OTPModel
+from app.utils.email_utils import send_otp_email
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
+
+def get_serializer():
+    return URLSafeTimedSerializer(current_app.config['SECRET_KEY'], salt="reset-password")
 
 @admin_bp.route("/register", methods=["POST"])
 def register_admin():
@@ -158,4 +165,111 @@ def verify_otp():
         }
     }), 200
 
+@admin_bp.route('/forgot-password/send-otp', methods=['POST'])
+def send_admin_otp():
+    try:
+        # 1. Get email from request
+        email = request.json.get('email')
+        if not email:
+            return jsonify({"error": "Email is required"}), 400
 
+        # 2. Validate if email exists in Engineer table
+        admin = Admin.query.filter_by(email=email).first()
+        if not admin:
+            return jsonify({"error": "You are not a registered user"}), 404
+
+        # 3. Generate a secure 6-digit OTP
+        otp = f"{random.randint(0, 999999):06d}"
+        expires_at = datetime.utcnow() + timedelta(minutes=5)
+
+        # 4. Store or update OTP in OTPModel
+        existing_otp = OTPModel.query.filter_by(email=email).first()
+        if existing_otp:
+            existing_otp.otp = otp
+            existing_otp.expires_at = expires_at
+        else:
+            new_otp = OTPModel(email=email, otp=otp, expires_at=expires_at)
+            db.session.add(new_otp)
+
+        db.session.commit()
+
+        # 5. Send OTP via email
+        email_sent = send_otp_email(email, otp)  # Make sure this function returns True/False
+
+        if email_sent:
+            return jsonify({"message": "OTP sent to your email"}), 200
+        else:
+            return jsonify({"error": "Failed to send OTP email"}), 500
+
+    except Exception as e:
+        print(f"Error in send_otp route: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+    
+    
+@admin_bp.route('/forgot-password/verify-otp', methods=['POST'])
+def verify_admin_otp():
+    data = request.json or {}
+    email = data.get('email')
+    otp_input = data.get('otp')
+
+    if not email or not otp_input:
+        return jsonify({"error": "Email and OTP required"}), 400
+
+    record = OTPModel.query.filter_by(email=email).first()
+    if not record:
+        return jsonify({"error": "OTP not found"}), 404
+
+    now = datetime.utcnow()
+    if now > record.expires_at:
+        db.session.delete(record)
+        db.session.commit()
+        return jsonify({"error": "OTP expired"}), 403
+
+    if otp_input != record.otp:
+        return jsonify({"error": "Invalid OTP"}), 401
+
+    db.session.delete(record)
+    db.session.commit()
+
+    # Create a temp reset token, so user can securely reset password
+    token = record.generate_reset_token()
+    return jsonify({"message": "OTP verified", "resetToken": token}), 200
+
+
+@admin_bp.route('/reset-password', methods=['POST'])
+def reset_password():
+    try:
+        data = request.json or {}
+        email = data.get('email')
+        reset_token = data.get('reset_token')
+        new_password = data.get('new_password')
+
+        if not email or not reset_token or not new_password:
+            return jsonify({"error": "Email, reset token, and new password required"}), 400
+
+        # 1. Verify token
+        serializer = get_serializer()
+        try:
+            token_email = serializer.loads(reset_token, max_age=300)  # Token expires after 5 minutes
+        except SignatureExpired:
+            return jsonify({"error": "Reset token has expired"}), 403
+        except BadSignature:
+            return jsonify({"error": "Invalid reset token"}), 401
+
+        # 2. Confirm email matches token
+        if token_email != email:
+            return jsonify({"error": "Token does not match email"}), 401
+
+        # 3. Find the engineer and update password
+        admin = Admin.query.filter_by(email=email).first()
+        if not admin:
+            return jsonify({"error": "Engineer not found"}), 404
+
+        admin.password = generate_password_hash(new_password)
+        db.session.commit()
+
+        return jsonify({"message": "Password updated successfully"}), 200
+
+    except Exception as e:
+        print(f"Error in reset_password: {e}")
+        return jsonify({"error": "Internal server error"}), 500
