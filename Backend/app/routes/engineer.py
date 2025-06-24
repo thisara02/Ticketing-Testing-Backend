@@ -502,7 +502,7 @@ def send_otp():
         if not email:
             return jsonify({"error": "Email is required"}), 400
 
-        # 2. Validate if email exists in Customer table
+        # 2. Validate if email exists in Engineer table
         engineer = Engineer.query.filter_by(email=email).first()
         if not engineer:
             return jsonify({"error": "You are not a registered user"}), 404
