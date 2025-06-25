@@ -17,7 +17,7 @@ ticket_bp = Blueprint("ticket", __name__, url_prefix="/api/ticket")
 @ticket_bp.route('sr', methods=['POST'])
 def create_service_request():
     try:
-        # Manual JWT decoding (similar to userinfo endpoint)
+        # Manual JWT decoding
         secret = current_app.config['SECRET_KEY']
         token = request.headers.get("Authorization", None)
         
@@ -37,13 +37,12 @@ def create_service_request():
         except jwt.InvalidTokenError:
             return jsonify({"error": "Invalid token"}), 401
 
-        # Extract user info from decoded token
+        # Extract user info from token
         user_name = decoded.get("name")
         user_company = decoded.get("company")
         user_email = decoded.get("email")
         user_mobile = decoded.get("mobile")
 
-        # Validate that we have the required user information
         if not user_name or not user_email:
             return jsonify({'error': 'Invalid token: missing user information'}), 401
 
@@ -54,6 +53,7 @@ def create_service_request():
         if not data.get('subject') or not data.get('description') or not data.get('priority'):
             return jsonify({'error': 'Missing required fields'}), 400
 
+        # Create ticket object
         ticket = Ticket(
             subject=data.get('subject'),
             type="Service Request",
@@ -70,22 +70,24 @@ def create_service_request():
             engineer_contact=""
         )
 
+        # Handle file upload if present
         if uploaded_file:
-            # Make sure uploads directory exists
             import os
             upload_dir = "uploads"
             if not os.path.exists(upload_dir):
                 os.makedirs(upload_dir)
             
-            upload_path = f"uploads/{uploaded_file.filename}"
+            upload_path = os.path.join(upload_dir, uploaded_file.filename)
             uploaded_file.save(upload_path)
             ticket.documents = upload_path
 
+        # Save to database
         db.session.add(ticket)
         db.session.commit()
-        
-        from app.utils.email_utils import send_sr_confirmation_email
-        
+
+        # Import and send emails
+        from app.utils.email_utils import send_sr_confirmation_email, notify_new_pending_sr_to_engineer
+
         try:
             send_sr_confirmation_email(
                 user_email=user_email,
@@ -99,18 +101,32 @@ def create_service_request():
         except Exception as e:
             print(f"Failed to send confirmation email: {str(e)}")
 
+        try:
+            notify_new_pending_sr_to_engineer(
+                ticket_id=ticket.id,
+                subject=data.get('subject'),
+                priority=data.get('priority'),
+                description=data.get('description'),
+                requester_name=user_name,
+                requester_company=user_company
+            )
+            print("Engineer notified about new pending ticket.")
+        except Exception as e:
+            print(f"Failed to notify engineer: {str(e)}")
+
+        # ✅ Always return a successful response if ticket is created
         return jsonify({'message': 'Service Request Created Successfully'}), 201
 
     except Exception as e:
         print(f"Error creating service request: {str(e)}")
         return jsonify({'error': str(e)}), 500
-    
+
     
     
 @ticket_bp.route('ft', methods=['POST'])
 def create_faulty_ticket():
     try:
-        # Manual JWT decoding (similar to userinfo endpoint)
+        # Manual JWT decoding
         secret = current_app.config['SECRET_KEY']
         token = request.headers.get("Authorization", None)
         
@@ -130,13 +146,12 @@ def create_faulty_ticket():
         except jwt.InvalidTokenError:
             return jsonify({"error": "Invalid token"}), 401
 
-        # Extract user info from decoded token
+        # Extract user info from token
         user_name = decoded.get("name")
         user_company = decoded.get("company")
         user_email = decoded.get("email")
         user_mobile = decoded.get("mobile")
 
-        # Validate that we have the required user information
         if not user_name or not user_email:
             return jsonify({'error': 'Invalid token: missing user information'}), 401
 
@@ -164,21 +179,20 @@ def create_faulty_ticket():
         )
 
         if uploaded_file:
-            # Make sure uploads directory exists
             import os
             upload_dir = "uploads"
             if not os.path.exists(upload_dir):
                 os.makedirs(upload_dir)
             
-            upload_path = f"uploads/{uploaded_file.filename}"
+            upload_path = os.path.join(upload_dir, uploaded_file.filename)
             uploaded_file.save(upload_path)
             ticket.documents = upload_path
 
         db.session.add(ticket)
         db.session.commit()
         
-        from app.utils.email_utils import send_ft_confirmation_email
-        
+        from app.utils.email_utils import send_ft_confirmation_email, notify_new_pending_ft_to_engineer
+
         try:
             send_ft_confirmation_email(
                 user_email=user_email,
@@ -192,13 +206,25 @@ def create_faulty_ticket():
         except Exception as e:
             print(f"Failed to send confirmation email: {str(e)}")
 
-        return jsonify({'message': 'Service Request Created Successfully'}), 201
+        try:
+            notify_new_pending_ft_to_engineer(
+                ticket_id=ticket.id,
+                subject=data.get('subject'),
+                priority=data.get('priority'),
+                description=data.get('description'),
+                requester_name=user_name,
+                requester_company=user_company
+            )
+            print("Engineer notified about new pending ticket.")
+        except Exception as e:
+            print(f"Failed to notify engineer: {str(e)}")
+
+        # ✅ Return success only after all processing
+        return jsonify({'message': 'Faulty Ticket Created Successfully'}), 201
 
     except Exception as e:
-        print(f"Error creating service request: {str(e)}")
+        print(f"Error creating faulty ticket: {str(e)}")
         return jsonify({'error': str(e)}), 500
-    
-    
     
 
 @ticket_bp.route('userinfo', methods=['GET'])

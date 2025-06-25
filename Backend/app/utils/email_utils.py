@@ -405,6 +405,189 @@ def send_admin_otp_email(user_email, otp_code):
     except Exception as e:
         print(f"Failed to send OTP email: {e}")
         return False
+    
+def notify_new_pending_ft_to_engineer(ticket_id, subject, priority, description, requester_name, requester_company):
+    """Send notification to fixed engineer email when a new pending ticket is created"""
+    try:
+        engineer_email = "shammid@lankacom.net"
+        engineer_name = "Engineer Team"
+
+        msg = Message(
+            subject='New Faulty Ticket Request Available',
+            recipients=[engineer_email],
+            sender=current_app.config['MAIL_DEFAULT_SENDER']
+        )
+
+        msg.html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; background-color: #f9fafb; padding: 20px; }}
+                .container {{ max-width: 600px; margin: auto; background-color: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }}
+                .header {{ background-color: #1d4ed8; color: white; padding: 15px; text-align: center; border-radius: 6px; }}
+                .ticket-box {{ background-color: #f1f5f9; padding: 15px; border-radius: 5px; margin-top: 20px; }}
+                .footer {{ font-size: 12px; margin-top: 30px; color: #6b7280; }}
+                .priority-critical {{ color: #dc2626; font-weight: bold; }}
+                .priority-high {{ color: #ea580c; font-weight: bold; }}
+                .priority-medium {{ color: #ca8a04; font-weight: bold; }}
+                .priority-low {{ color: #16a34a; font-weight: bold; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>New Pending Ticket Available</h2>
+                </div>
+                <div class="content">
+                    <p>Dear {engineer_name},</p>
+                    <p>A new faulty ticket has been submitted and is currently pending assignment.</p>
+                    <div class="ticket-box">
+                        <p><strong>Ticket ID:</strong> SR-{ticket_id:06d}</p>
+                        <p><strong>Subject:</strong> {subject}</p>
+                        <p><strong>Description:</strong> {description}</p>
+                        <p><strong>Priority:</strong> <span class="priority-{priority.lower()}">{priority}</span></p>
+                        <p><strong>Status:</strong> Pending</p>
+                        <p><strong>Requested By:</strong> {requester_name} ({requester_company})</p>
+                        <p><strong>Created:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                    </div>
+                    <p>Please log in to the system to view and assign this request if applicable.</p>
+                    <p>Best regards,<br><strong>LankaCom Support Portal</strong></p>
+                </div>
+                <div class="footer">
+                    <p>This is an automated alert. Please do not reply directly to this email.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        msg.body = f"""
+        Dear {engineer_name},
+
+        A new faulty ticket has been submitted and is currently pending assignment.
+
+        Ticket Details:
+        - Ticket ID: SR-{ticket_id:06d}
+        - Subject: {subject}
+        - Description: {description}
+        - Priority: {priority}
+        - Status: Pending
+        - Requested By: {requester_name} ({requester_company})
+        - Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+        Please log in to the system and assign it if applicable.
+
+        Regards,
+        LankaCom Support Portal
+
+        ---
+        This is an automated message. Do not reply.
+        """
+
+        thread = threading.Thread(
+            target=send_async_email,
+            args=(current_app._get_current_object(), msg)
+        )
+        thread.start()
+
+        return True
+
+    except Exception as e:
+        print(f"Failed to send engineer notification email: {str(e)}")
+        return False
+    
+def notify_new_pending_sr_to_engineer(ticket_id, subject, priority, description, requester_name, requester_company):
+    """Send notification to fixed engineer email when a new pending ticket is created"""
+    try:
+        engineer_email = "shammid@lankacom.net"
+        engineer_name = "Engineer Team"
+
+        msg = Message(
+            subject='New Pending Service Request Available',
+            recipients=[engineer_email],
+            sender=current_app.config['MAIL_DEFAULT_SENDER']
+        )
+
+        msg.html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; background-color: #f9fafb; padding: 20px; }}
+                .container {{ max-width: 600px; margin: auto; background-color: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }}
+                .header {{ background-color: #55b42c; color: white; padding: 15px; text-align: center; border-radius: 6px; }}
+                .ticket-box {{ background-color: #f1f5f9; padding: 15px; border-radius: 5px; margin-top: 20px; }}
+                .footer {{ font-size: 12px; margin-top: 30px; color: #6b7280; }}
+                .priority-critical {{ color: #dc2626; font-weight: bold; }}
+                .priority-high {{ color: #ea580c; font-weight: bold; }}
+                .priority-medium {{ color: #ca8a04; font-weight: bold; }}
+                .priority-low {{ color: #16a34a; font-weight: bold; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>New Pending Ticket Available</h2>
+                </div>
+                <div class="content">
+                    <p>Dear {engineer_name},</p>
+                    <p>A new service request has been submitted and is currently pending assignment.</p>
+                    <div class="ticket-box">
+                        <p><strong>Ticket ID:</strong> SR-{ticket_id:06d}</p>
+                        <p><strong>Subject:</strong> {subject}</p>
+                        <p><strong>Description:</strong> {description}</p>
+                        <p><strong>Priority:</strong> <span class="priority-{priority.lower()}">{priority}</span></p>
+                        <p><strong>Status:</strong> Pending</p>
+                        <p><strong>Requested By:</strong> {requester_name} ({requester_company})</p>
+                        <p><strong>Created:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                    </div>
+                    <p>Please log in to the system to view and assign this request if applicable.</p>
+                    <p>Best regards,<br><strong>LankaCom Support Portal</strong></p>
+                </div>
+                <div class="footer">
+                    <p>This is an automated alert. Please do not reply directly to this email.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        msg.body = f"""
+        Dear {engineer_name},
+
+        A new service request has been submitted and is currently pending assignment.
+
+        Ticket Details:
+        - Ticket ID: SR-{ticket_id:06d}
+        - Subject: {subject}
+        - Description: {description}
+        - Priority: {priority}
+        - Status: Pending
+        - Requested By: {requester_name} ({requester_company})
+        - Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+        Please log in to the system and assign it if applicable.
+
+        Regards,
+        LankaCom Support Portal
+
+        ---
+        This is an automated message. Do not reply.
+        """
+
+        thread = threading.Thread(
+            target=send_async_email,
+            args=(current_app._get_current_object(), msg)
+        )
+        thread.start()
+
+        return True
+
+    except Exception as e:
+        print(f"Failed to send engineer notification email: {str(e)}")
+        return False
+
 
 # Import datetime at the top of the file
 from datetime import datetime
