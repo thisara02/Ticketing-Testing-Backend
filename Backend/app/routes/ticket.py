@@ -266,7 +266,7 @@ def get_pending_tickets():
         tickets_data = []
         for ticket in pending_tickets:
             tickets_data.append({
-                "id": f"#{ticket.id:06d}",
+                "id": ticket.id,
                 "subject": ticket.subject,
                 "type": ticket.type,
                 "description": ticket.description,

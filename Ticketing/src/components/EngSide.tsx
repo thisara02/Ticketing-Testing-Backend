@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { FaHistory, FaTachometerAlt} from "react-icons/fa";
-import Profile from "../assets/img1.jpg";
 import { useNavigate } from "react-router-dom";
 import { FaTicket, FaUserGroup } from "react-icons/fa6";
 import { NavLink } from "react-router-dom";
@@ -22,7 +21,6 @@ interface DecodedToken {
 const EngSide: React.FC<SidebarProps> = ({ isOpen }) => {
     const navigate = useNavigate();
     const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
-    const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
 
     let engineerName = "Guest";
    let engineerEmail = "guest@example.com";
@@ -43,45 +41,45 @@ const EngSide: React.FC<SidebarProps> = ({ isOpen }) => {
 
     
     useEffect(() => {
-  const token = localStorage.getItem("engToken");
-  if (!token) {
-    Swal.fire("Error", "Authentication token missing. Please login again.", "error");
-    return;
-  }
-
-  const baseUrl = "http://localhost:5000";
-
-  fetch(`${baseUrl}/api/engineer/profile`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  })
-    .then(async (res) => {
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null);
-        throw new Error(errorData?.error || "Failed to fetch profile");
+      const token = localStorage.getItem("engToken");
+      if (!token) {
+        Swal.fire("Error", "Authentication token missing. Please login again.", "error");
+        return;
       }
-      return res.json();
-    })
-    .then((data) => {
 
-      if (data.profile_image) {
-        // Use the full URL returned from backend
-        const imageUrl = data.profile_image.startsWith('http') 
-          ? data.profile_image 
-          : `${baseUrl}${data.profile_image}`;
-        setProfileImagePreview(imageUrl + `?t=${Date.now()}`);
-      } else {
-        setProfileImagePreview(null);
-      }
-    })
-    .catch((err) => {
-      console.error(err);
-      Swal.fire("Error", err.message || "Failed to load profile data", "error");
-    });
-}, []);
+      const baseUrl = "http://localhost:5000";
+
+      fetch(`${baseUrl}/api/engineer/profile`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => null);
+            throw new Error(errorData?.error || "Failed to fetch profile");
+          }
+          return res.json();
+        })
+        .then((data) => {
+
+          if (data.profile_image) {
+            // Use the full URL returned from backend
+            const imageUrl = data.profile_image.startsWith('http') 
+              ? data.profile_image 
+              : `${baseUrl}${data.profile_image}`;
+            setProfileImagePreview(imageUrl + `?t=${Date.now()}`);
+          } else {
+            setProfileImagePreview(null);
+          }
+        })
+        .catch((err) => {
+          console.error(err);
+          Swal.fire("Error", err.message || "Failed to load profile data", "error");
+        });
+    }, []);
 
     const handleLogout = () => {
       Swal.fire({
