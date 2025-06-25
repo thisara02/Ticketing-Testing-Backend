@@ -1,3 +1,4 @@
+import os
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt, jwt_required, get_jwt_identity
 from datetime import datetime
@@ -11,6 +12,7 @@ from app.models import Customer
 from flask_jwt_extended import get_jwt
 from app.utils.email_utils import send_assignment_notification_email
 from pytz import timezone
+from werkzeug.utils import secure_filename
 
 ticket_bp = Blueprint("ticket", __name__, url_prefix="/api/ticket")
 
@@ -72,14 +74,19 @@ def create_service_request():
 
         # Handle file upload if present
         if uploaded_file:
-            import os
-            upload_dir = "uploads"
+            # Assuming your 'uploads' folder is at the root level next to 'app'
+            upload_dir = os.path.join(current_app.root_path, '..', 'uploads')
+            upload_dir = os.path.abspath(upload_dir)  # Make sure absolute path
+
             if not os.path.exists(upload_dir):
                 os.makedirs(upload_dir)
-            
-            upload_path = os.path.join(upload_dir, uploaded_file.filename)
+
+            filename = secure_filename(uploaded_file.filename)
+            upload_path = os.path.join(upload_dir, filename)
             uploaded_file.save(upload_path)
-            ticket.documents = upload_path
+
+            # Save relative URL path for front-end to access (relative to Flask app root)
+            ticket.documents = f"uploads/{filename}"
 
         # Save to database
         db.session.add(ticket)

@@ -1,7 +1,7 @@
 import math
 import os
 import random
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, app, request, jsonify, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from app.models import LoginAttempt
@@ -279,7 +279,7 @@ def get_engineer_ticket_details(ticket_id):
         "requester_contact": ticket.requester_contact,
         "created_at": ticket.created_at.isoformat() if ticket.created_at else None,
         "status": ticket.status,
-        "documents": []  # Add document handling if needed
+        "documents": [ticket.documents] if ticket.documents else []
     }
 
     return jsonify({

@@ -33,6 +33,11 @@ const EngViewPending = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Check if URL is image
+  const isImage = (url: string) => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
+  // Check if URL is PDF
+  const isPdf = (url: string) => /\.pdf$/i.test(url);
+
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
   useEffect(() => {
@@ -73,7 +78,7 @@ const EngViewPending = () => {
     };
 
     fetchTicketDetails();
-    const interval = setInterval(fetchTicketDetails, 1000);
+    const interval = setInterval(fetchTicketDetails, 10000); // refresh every 10s instead of 1s for perf
     return () => clearInterval(interval);
   }, [ticketId]);
 
@@ -103,7 +108,7 @@ const EngViewPending = () => {
       }
 
       const newComment = await response.json();
-      setComments([...comments, newComment]);
+      setComments((prev) => [...prev, newComment]);
       setCommentText("");
     } catch (error) {
       console.error("Error posting comment:", error);
@@ -141,7 +146,7 @@ const EngViewPending = () => {
           <div className="flex-1 flex items-center justify-center bg-gray-100">
             <div className="text-center">
               <p className="text-red-600 text-lg">{error || "Ticket not found"}</p>
-              <button 
+              <button
                 onClick={() => window.history.back()}
                 className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
               >
@@ -178,36 +183,72 @@ const EngViewPending = () => {
               <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Ticket Details</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div className="bg-gray-50 p-4 rounded-md shadow-sm">
-                    <p className="text-sm font-semibold text-gray-500">Requester Name</p>
-                    <p className="text-base font-medium text-gray-800">{ticket.requester_name}</p>
+                  <p className="text-sm font-semibold text-gray-500">Requester Name</p>
+                  <p className="text-base font-medium text-gray-800">{ticket.requester_name}</p>
                 </div>
 
                 <div className="bg-gray-50 p-4 rounded-md shadow-sm">
-                    <p className="text-sm font-semibold text-gray-500">Email</p>
-                    <p className="text-base font-medium text-gray-800">{ticket.requester_email}</p>
+                  <p className="text-sm font-semibold text-gray-500">Email</p>
+                  <p className="text-base font-medium text-gray-800">{ticket.requester_email}</p>
                 </div>
 
                 <div className="bg-gray-50 p-4 rounded-md shadow-sm">
-                    <p className="text-sm font-semibold text-gray-500">Contact</p>
-                    <p className="text-base font-medium text-gray-800">{ticket.requester_contact}</p>
+                  <p className="text-sm font-semibold text-gray-500">Contact</p>
+                  <p className="text-base font-medium text-gray-800">{ticket.requester_contact}</p>
                 </div>
-            </div>
+              </div>
               <p className="text-gray-600 mt-2 text-m font-medium"><strong>Ticket Type:</strong> {ticket.type}</p>
               <p className="text-red-600 mt-2 text-lg font-medium"><strong>Inquiry Issue :</strong> {ticket.subject}</p>
               <p className="text-gray-600 mt-2 text-m font-medium"><strong>Description:</strong> {ticket.description}</p>
               <p className="text-gray-600 mt-2 text-m font-medium"><strong>Created At:</strong> {new Date(ticket.created_at).toLocaleString()}</p>
               <p className="text-gray-600 mt-2 text-m font-medium"><strong>Status:</strong> {ticket.status}</p>
+
               {ticket.documents && ticket.documents.length > 0 && (
-                <p className="text-gray-600 mt-2 text-m font-medium">
-                  <strong>Documents:</strong>{" "}
-                  {ticket.documents.map((doc, i) => (
-                    <a key={i} href="#" className="text-blue-600 underline mr-2">
-                      {doc}
-                    </a>
-                  ))}
-                </p>
+                <div className="mt-4 text-gray-600">
+                  <strong>Attached Documents:</strong>
+                  <div className="flex flex-wrap gap-4 mt-2">
+                    {ticket.documents.map((doc, i) => {
+                      if (isImage(doc)) {
+                        return (
+                          <img
+                            key={i}
+                            src={`http://localhost:5000/${doc}`}
+                            alt={`Document ${i + 1}`}
+                            className="w-32 h-32 object-cover rounded-md shadow-md cursor-pointer hover:scale-105 transition-transform"
+                            onClick={() => window.open(`http://localhost:5000/${doc}`, "_blank")}
+                          />
+                        );
+                      } else if (isPdf(doc)) {
+                        return (
+                          <div
+                            key={i}
+                            className="w-24 h-32 flex flex-col items-center justify-center border rounded cursor-pointer hover:shadow-lg transition-shadow bg-gray-400"
+                            onClick={() => window.open(`http://localhost:5000/${doc}`, "_blank")}
+                          >
+                            <img
+                              src="https://cdn-icons-png.flaticon.com/512/337/337946.png"
+                              alt="PDF Icon"
+                              className="w-12 h-12 mb-2"
+                            />
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <a
+                            key={i}
+                            href={`http://localhost:5000/${doc}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 underline"
+                          >
+                            Download {doc.split("/").pop()}
+                          </a>
+                        );
+                      }
+                    })}
+                  </div>
+                </div>
               )}
-            
             </div>
 
             {/* Right Section (1/3): Comments */}
@@ -217,7 +258,7 @@ const EngViewPending = () => {
                 {comments.map((comment) => (
                   <div key={comment.id} className="bg-gray-100 p-3 rounded-md">
                     <p className="text-xs text-blue-500">
-                       {comment.author}, {new Date(comment.timestamp).toLocaleString()}
+                      {comment.author}, {new Date(comment.timestamp).toLocaleString()}
                     </p>
                     <p className="text-m text-gray-700 mb-1">{comment.content}</p>
                   </div>
