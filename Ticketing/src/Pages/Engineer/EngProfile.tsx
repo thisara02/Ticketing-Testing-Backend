@@ -29,49 +29,53 @@ const EngProfile = () => {
     confirmNewPassword: "",
   });
 
-  useEffect(() => {
-    const token = localStorage.getItem("engToken");
-    if (!token) {
-      Swal.fire("Error", "Authentication token missing. Please login again.", "error");
-      return;
-    }
+  // Update the useEffect to handle the full URL properly
+useEffect(() => {
+  const token = localStorage.getItem("engToken");
+  if (!token) {
+    Swal.fire("Error", "Authentication token missing. Please login again.", "error");
+    return;
+  }
 
-    const baseUrl = "http://localhost:5000";
+  const baseUrl = "http://localhost:5000";
 
-    fetch(`${baseUrl}/api/engineer/profile`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+  fetch(`${baseUrl}/api/engineer/profile`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.error || "Failed to fetch profile");
+      }
+      return res.json();
     })
-      .then(async (res) => {
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => null);
-          throw new Error(errorData?.error || "Failed to fetch profile");
-        }
-        return res.json();
-      })
-      .then((data) => {
-        setFormData({
-          name: data.name || "",
-          email: data.email || "",
-          mobile: data.mobile || "",
-          designation: data.designation || "",
-        });
-
-        if (data.profile_image) {
-          // Expect full URL from backend; add cache-buster query param
-          setProfileImagePreview(data.profile_image + `?t=${Date.now()}`);
-        } else {
-          setProfileImagePreview(null);
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        Swal.fire("Error", err.message || "Failed to load profile data", "error");
+    .then((data) => {
+      setFormData({
+        name: data.name || "",
+        email: data.email || "",
+        mobile: data.mobile || "",
+        designation: data.designation || "",
       });
-  }, []);
+
+      if (data.profile_image) {
+        // Use the full URL returned from backend
+        const imageUrl = data.profile_image.startsWith('http') 
+          ? data.profile_image 
+          : `${baseUrl}${data.profile_image}`;
+        setProfileImagePreview(imageUrl + `?t=${Date.now()}`);
+      } else {
+        setProfileImagePreview(null);
+      }
+    })
+    .catch((err) => {
+      console.error(err);
+      Swal.fire("Error", err.message || "Failed to load profile data", "error");
+    });
+}, []);
 
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
@@ -118,35 +122,50 @@ const EngProfile = () => {
   };
 
   const saveProfile = async () => {
-    const token = localStorage.getItem("engToken");
-    if (!token) {
-      Swal.fire("Error", "Authentication token missing. Please login again.", "error");
-      return;
+  const token = localStorage.getItem("engToken");
+  if (!token) {
+    Swal.fire("Error", "Authentication token missing. Please login again.", "error");
+    return;
+  }
+
+  try {
+    const formPayload = new FormData();
+    formPayload.append("name", formData.name);
+    formPayload.append("mobilep", formData.mobile); // backend expects "mobilep"
+    formPayload.append("designation", formData.designation);
+    if (profileImageFile) formPayload.append("profile_image", profileImageFile);
+
+    const res = await fetch("http://localhost:5000/api/engineer/profile", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formPayload,
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to save profile");
+
+    // Update the profile image preview with the new URL
+    if (data.profile && data.profile.profile_image) {
+      const baseUrl = "http://localhost:5000";
+      const imageUrl = data.profile.profile_image.startsWith('http') 
+        ? data.profile.profile_image 
+        : `${baseUrl}${data.profile.profile_image}`;
+      setProfileImagePreview(imageUrl + `?t=${Date.now()}`);
     }
 
-    try {
-      const formPayload = new FormData();
-      formPayload.append("name", formData.name);
-      formPayload.append("mobilep", formData.mobile); // backend expects "mobilep"
-      formPayload.append("designation", formData.designation);
-      if (profileImageFile) formPayload.append("profile_image", profileImageFile);
-
-      const res = await fetch("http://localhost:5000/api/engineer/profile", {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formPayload,
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to save profile");
-
-      Swal.fire("Success", "Your profile changes have been saved successfully", "success");
-    } catch (error: any) {
-      Swal.fire("Error", error.message || "Failed to save profile", "error");
+    // Clear the file input
+    setProfileImageFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
-  };
+
+    Swal.fire("Success", "Your profile changes have been saved successfully", "success");
+  } catch (error: any) {
+    Swal.fire("Error", error.message || "Failed to save profile", "error");
+  }
+};
 
   const changePassword = async () => {
     if (errors.newPassword || errors.confirmNewPassword) {

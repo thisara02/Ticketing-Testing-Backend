@@ -17,6 +17,7 @@ from flask_cors import cross_origin
 from app.models import OTPModel
 from app.utils.email_utils import send_otp_email
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from flask import send_from_directory
 
 
 engineer_bp = Blueprint('engineer', __name__, url_prefix='/api/engineer')
@@ -628,6 +629,104 @@ def get_user_id_from_token():
     except jwt.InvalidTokenError:
         return None, jsonify({"error": "Invalid token"}), 401
 
+@engineer_bp.route('/profile', methods=['PUT'])
+def update_profile():
+    engineer_id, error_response, status = get_user_id_from_token()
+    if error_response:
+        return error_response, status
+
+    engineer = Engineer.query.get(engineer_id)
+    if not engineer:
+        return jsonify({"error": "Engineer not found"}), 404
+
+    try:
+        data = request.form
+        name = data.get("name")
+        mobile = data.get("mobilep")
+        designation = data.get("designation")
+
+        if not name or not mobile or not designation:
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # Update basic profile fields
+        engineer.name = name
+        engineer.mobile = mobile
+        engineer.designation = designation
+
+        # Handle profile image upload
+        if 'profile_image' in request.files:
+            file = request.files['profile_image']
+            
+            # Check if file is actually selected
+            if file and file.filename != '':
+                # Validate file type
+                allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
+                if not ('.' in file.filename and 
+                        file.filename.rsplit('.', 1)[1].lower() in allowed_extensions):
+                    return jsonify({"error": "Invalid file type. Only PNG, JPG, JPEG, and GIF are allowed"}), 400
+                
+                # Create uploads directory if it doesn't exist
+                upload_folder = os.path.join(current_app.root_path, 'uploads', 'profile_images')
+                os.makedirs(upload_folder, exist_ok=True)
+                
+                # Generate unique filename to avoid conflicts
+                import uuid
+                file_extension = file.filename.rsplit('.', 1)[1].lower()
+                unique_filename = f"{engineer.id}_{uuid.uuid4().hex[:8]}.{file_extension}"
+                
+                # Remove old profile image if exists
+                if engineer.profile_image:
+                    old_file_path = os.path.join(upload_folder, engineer.profile_image)
+                    if os.path.exists(old_file_path):
+                        try:
+                            os.remove(old_file_path)
+                        except OSError:
+                            pass  # Continue even if old file deletion fails
+                
+                # Save new file
+                file_path = os.path.join(upload_folder, unique_filename)
+                file.save(file_path)
+                
+                # Update database with filename
+                engineer.profile_image = unique_filename
+
+        db.session.commit()
+        
+        # Return updated profile data
+        profile_image_url = None
+        if engineer.profile_image:
+            profile_image_url = f"/api/engineer/profile-image/{engineer.profile_image}"
+        
+        return jsonify({
+            "message": "Profile updated successfully",
+            "profile": {
+                "id": engineer.id,
+                "name": engineer.name,
+                "email": engineer.email,
+                "mobile": engineer.mobile,
+                "designation": engineer.designation,
+                "profile_image": profile_image_url
+            }
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error updating profile: {e}")
+        return jsonify({"error": "Failed to update profile"}), 500
+
+
+@engineer_bp.route('/profile-image/<filename>', methods=['GET'])
+def get_profile_image(filename):
+    """Serve profile images"""
+    try:
+        upload_folder = os.path.join(current_app.root_path, 'uploads', 'profile_images')
+        return send_from_directory(upload_folder, filename)
+    except Exception as e:
+        print(f"Error serving profile image: {e}")
+        return jsonify({"error": "Image not found"}), 404
+
+
+# Update the get_profile route as well
 @engineer_bp.route('/profile', methods=['GET'])
 def get_profile():
     engineer_id, error_response, status = get_user_id_from_token()
@@ -642,50 +741,19 @@ def get_profile():
     if not engineer:
         return jsonify({"error": "Engineer not found"}), 404
 
+    # Generate full URL for profile image
+    profile_image_url = None
+    if engineer.profile_image:
+        profile_image_url = f"/api/engineer/profile-image/{engineer.profile_image}"
+
     return jsonify({
         "id": engineer.id,
         "name": engineer.name,
         "email": engineer.email,
         "mobile": engineer.mobile,
         "designation": engineer.designation,
-        "profile_image": engineer.profile_image or None
+        "profile_image": profile_image_url
     })
-
-from flask import request, jsonify, current_app
-from werkzeug.utils import secure_filename
-import os
-
-@engineer_bp.route('/profile', methods=['PUT'])
-def update_profile():
-    engineer_id, error_response, status = get_user_id_from_token()
-    if error_response:
-        return error_response, status
-
-    engineer = Engineer.query.get(engineer_id)
-    if not engineer:
-        return jsonify({"error": "Engineer not found"}), 404
-
-    data = request.form
-    name = data.get("name")
-    mobile = data.get("mobilep")
-    designation = data.get("designation")
-
-    if not name or not mobile or not designation:
-        return jsonify({"error": "Missing required fields"}), 400
-
-    engineer.name = name
-    engineer.mobile = mobile
-    engineer.designation = designation
-
-    if 'profile_image' in request.files:
-        file = request.files['profile_image']
-        filename = secure_filename(file.filename)
-        upload_folder = current_app.config['UPLOAD_FOLDER']
-        file.save(os.path.join(upload_folder, filename))
-        engineer.profile_image = filename
-
-    db.session.commit()
-    return jsonify({"message": "Profile updated successfully"})
 
 
 @engineer_bp.route('/change-password', methods=['POST'])

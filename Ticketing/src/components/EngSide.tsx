@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { FaHistory, FaTachometerAlt} from "react-icons/fa";
 import Profile from "../assets/img1.jpg";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +21,8 @@ interface DecodedToken {
 
 const EngSide: React.FC<SidebarProps> = ({ isOpen }) => {
     const navigate = useNavigate();
+    const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
+    const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
 
     let engineerName = "Guest";
    let engineerEmail = "guest@example.com";
@@ -38,6 +40,48 @@ const EngSide: React.FC<SidebarProps> = ({ isOpen }) => {
          localStorage.removeItem("engToken");
        }
      }
+
+    
+    useEffect(() => {
+  const token = localStorage.getItem("engToken");
+  if (!token) {
+    Swal.fire("Error", "Authentication token missing. Please login again.", "error");
+    return;
+  }
+
+  const baseUrl = "http://localhost:5000";
+
+  fetch(`${baseUrl}/api/engineer/profile`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.error || "Failed to fetch profile");
+      }
+      return res.json();
+    })
+    .then((data) => {
+
+      if (data.profile_image) {
+        // Use the full URL returned from backend
+        const imageUrl = data.profile_image.startsWith('http') 
+          ? data.profile_image 
+          : `${baseUrl}${data.profile_image}`;
+        setProfileImagePreview(imageUrl + `?t=${Date.now()}`);
+      } else {
+        setProfileImagePreview(null);
+      }
+    })
+    .catch((err) => {
+      console.error(err);
+      Swal.fire("Error", err.message || "Failed to load profile data", "error");
+    });
+}, []);
 
     const handleLogout = () => {
       Swal.fire({
@@ -73,12 +117,18 @@ const EngSide: React.FC<SidebarProps> = ({ isOpen }) => {
         {/* User Profile */}
         <div className="flex items-center space-x-4 mb-6 pb-4 border-b pt-10 justify-center">
           <div>
-        <img
-            src={Profile}
-            alt="User"
-            className="w-16 h-16 rounded-full object-cover border border-gray-300 mx-auto cursor-pointer mb-2"
-            onClick={() => navigate("/eng-profile")}
-        />
+        {profileImagePreview ? (
+                  <img
+                    src={profileImagePreview}
+                    alt="Profile"
+                    className="w-16 h-16 rounded-full object-cover border border-gray-300 mx-auto cursor-pointer mb-2"
+                    onClick={() => navigate("/eng-profile")}
+                  />
+                ) : (
+                  <div onClick={() => navigate("/eng-profile")} className="w-16 h-16 rounded-full border-4 border-gray-300 bg-gray-200 flex items-center justify-center text-gray-500 object-cover mx-auto cursor-pointer text-center">
+                    USER
+                  </div>
+                )}
         
             <p className="font-semibold text-black   text-base font-jura text-center">{engineerName}</p>
             {/* <p className="text-gray-500 text-sm">{user.email}</p> */}
