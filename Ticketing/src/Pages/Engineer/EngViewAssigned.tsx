@@ -117,7 +117,7 @@ const EngViewAssigned = () => {
       console.error("Error posting comment:", error);
       alert("Failed to post comment. Please try again.");
     }
-  };
+};
 
   if (loading) {
     return (

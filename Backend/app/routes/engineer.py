@@ -270,7 +270,7 @@ def get_engineer_ticket_details(ticket_id):
     } for c in comments]
 
     ticket_data = {
-        "id": f"#{ticket.id:06d}",
+        "id": ticket.id,
         "subject": ticket.subject,
         "type": ticket.type,
         "description": ticket.description,
@@ -389,7 +389,7 @@ def get_engineer_onticket_details(ticket_id):
     } for c in comments]
 
     ticket_data = {
-        "id": f"#{ticket.id:06d}",
+        "id": ticket.id,
         "subject": ticket.subject,
         "type": ticket.type,
         "description": ticket.description,
@@ -428,7 +428,7 @@ def eng_add_onticket_comment(ticket_id):
     except jwt.InvalidTokenError:
         return jsonify({"error": "Invalid token"}), 401
 
-    customer_name = decoded.get("name", "Customer")  # Get customer name from token
+    engineer_name = decoded.get("name", "Engineer")  # Get customer name from token
 
     # Verify ticket exists and belongs to this company
     ticket = Ticket.query.filter(
@@ -448,10 +448,10 @@ def eng_add_onticket_comment(ticket_id):
         # Create new comment
         comment = Comment(
             ticket_id=ticket_id,
-            author_name=customer_name,
+            author_name=engineer_name,
             author_role='Engineer',
             message=content,
-            timestamp=datetime.now(timezone('Asia/Colombo'))
+            timestamp=datetime.now(pytz.timezone('Asia/Colombo')) 
         )
         
         db.session.add(comment)
@@ -470,6 +470,7 @@ def eng_add_onticket_comment(ticket_id):
         
     except Exception as e:
         db.session.rollback()
+        print(f"Error creating comment: {e}")  # Add this line
         return jsonify({"error": "Failed to create comment"}), 500
     
 
