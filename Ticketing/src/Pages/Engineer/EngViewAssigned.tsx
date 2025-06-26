@@ -31,8 +31,6 @@ const EngViewAssigned = () => {
 
   const navigate = useNavigate();
 
-  
-
   const { ticketId } = useParams<{ ticketId: string }>();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [commentText, setCommentText] = useState("");
@@ -40,6 +38,11 @@ const EngViewAssigned = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Check if URL is image
+  const isImage = (url: string) => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
+  // Check if URL is PDF
+  const isPdf = (url: string) => /\.pdf$/i.test(url);
 
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
@@ -272,11 +275,45 @@ const EngViewAssigned = () => {
               {(ticket.documents || []).length > 0 && (
                 <p className="text-gray-600 mt-2 text-m font-medium">
                     <strong>Documents:</strong>{" "}
-                    {(ticket.documents || []).map((doc, i) => (
-                    <a key={i} href="#" className="text-blue-600 underline mr-2">
-                        {doc}
-                    </a>
-                    ))}
+                    {ticket.documents?.map((doc, i) => {
+                      if (isImage(doc)) {
+                        return (
+                          <img
+                            key={i}
+                            src={`http://localhost:5000/${doc}`}
+                            alt={`Document ${i + 1}`}
+                            className="w-32 h-32 object-cover rounded-md shadow-md cursor-pointer hover:scale-105 transition-transform"
+                            onClick={() => window.open(`http://localhost:5000/${doc}`, "_blank")}
+                          />
+                        );
+                      } else if (isPdf(doc)) {
+                        return (
+                          <div
+                            key={i}
+                            className="w-24 h-32 flex flex-col items-center justify-center border rounded cursor-pointer hover:shadow-lg transition-shadow bg-gray-400"
+                            onClick={() => window.open(`http://localhost:5000/${doc}`, "_blank")}
+                          >
+                            <img
+                              src="https://cdn-icons-png.flaticon.com/512/337/337946.png"
+                              alt="PDF Icon"
+                              className="w-12 h-12 mb-2"
+                            />
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <a
+                            key={i}
+                            href={`http://localhost:5000/${doc}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 underline"
+                          >
+                            Download {doc.split("/").pop()}
+                          </a>
+                        );
+                      }
+                    })}
                 </p>
                 )}
               {/* <p className="text-green-600 mt-2 text-m font-medium">

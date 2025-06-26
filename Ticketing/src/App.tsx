@@ -46,7 +46,6 @@ import EngViewPending from "./Pages/Engineer/EngViewPending"
 import EngViewClosed from "./Pages/Engineer/EngViewClosed"
 import EngViewOngoing from "./Pages/Engineer/EngViewOngoing"
 import EngViewAssigned from "./Pages/Engineer/EngViewAssigned"
-import EngCloseTicket from "./Pages/Engineer/EngCloseTicket"
 import EngCustomerDetails from "./Pages/Engineer/EngCustomerDetails"
 
 
@@ -105,7 +104,6 @@ const App: React.FC = () => {
       <Route path="/eng-view-pending/:ticketId" element={<EngViewPending />} />
       <Route path="/eng-viewon/:ticketId" element={<EngViewOngoing />} />
       <Route path="/eng-view-assign/:ticketId" element={<EngViewAssigned />} />
-      <Route path="/eng-close-ticket" element={<EngCloseTicket />} />
       <Route path="/eng-cus-details" element={<EngCustomerDetails />} />
       
     </Routes>

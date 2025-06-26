@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../../components/EngSide";
 import Navbar from "../../components/EngNav";
-import { useNavigate, useParams } from "react-router-dom";
-import Swal from "sweetalert2";
+import { useParams } from "react-router-dom";
 
 interface Ticket {
   id: string;
@@ -17,8 +16,9 @@ interface Ticket {
   documents?: string[];
   engineer_name:string;
   engineer_contact:string;
-  rectification:string;
-  workdone:string;
+  rectification_date:string;
+  work_done_comment:string;
+  closed_at: string;
 }
 
 interface Comment {
@@ -29,11 +29,9 @@ interface Comment {
   role: string;
 }
 
-const EngViewAssigned = () => {
+const EngViewClosed = () => {
 
-  const navigate = useNavigate();
 
-  
 
   const { ticketId } = useParams<{ ticketId: string }>();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -42,6 +40,11 @@ const EngViewAssigned = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Check if URL is image
+  const isImage = (url: string) => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
+  // Check if URL is PDF
+  const isPdf = (url: string) => /\.pdf$/i.test(url);
 
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
@@ -61,7 +64,7 @@ const EngViewAssigned = () => {
           return;
         }
 
-        const response = await fetch(`http://localhost:5000/api/engineer/ontickets/${ticketId}`, {
+        const response = await fetch(`http://localhost:5000/api/engineer/closetickets/${ticketId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -165,46 +168,46 @@ const EngViewAssigned = () => {
   }
 
   // Handler for closing the ticket (you can customize with API calls)
-  const handleCloseTicket = async (e: React.FormEvent) => {
-  e.preventDefault();
+//   const handleCloseTicket = async (e: React.FormEvent) => {
+//   e.preventDefault();
 
-  const token = localStorage.getItem("engToken");
-  if (!token) {
-    alert("Authentication token missing");
-    return;
-  }
+//   const token = localStorage.getItem("engToken");
+//   if (!token) {
+//     alert("Authentication token missing");
+//     return;
+//   }
 
-  const rectification_date = (document.querySelector('input[type="datetime-local"]') as HTMLInputElement)?.value;
-  const work_done_comment = (document.querySelector('textarea[placeholder="Add any final notes here..."]') as HTMLTextAreaElement)?.value;
+//   const rectification_date = (document.querySelector('input[type="datetime-local"]') as HTMLInputElement)?.value;
+//   const work_done_comment = (document.querySelector('textarea[placeholder="Add any final notes here..."]') as HTMLTextAreaElement)?.value;
 
-  try {
-    const response = await fetch(`http://localhost:5000/api/ticket/close/${ticketId}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ rectification_date, work_done_comment }),
-    });
+//   try {
+//     const response = await fetch(`http://localhost:5000/api/ticket/close/${ticketId}`, {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${token}`,
+//       },
+//       body: JSON.stringify({ rectification_date, work_done_comment }),
+//     });
 
-    if (!response.ok) {
-      throw new Error("Failed to close ticket");
-    }
+//     if (!response.ok) {
+//       throw new Error("Failed to close ticket");
+//     }
 
-    Swal.fire({
-          icon: "success",
-          title: `Ticket ${ticket.id} closed successfully!`,
-          showConfirmButton: false,
-          timer: 1000,
-    })
-    .then(() => {
-      navigate("/eng-dash");
-    });// or wherever you want
-  } catch (err) {
-    console.error(err);
-    alert("Error closing ticket");
-  }
-};
+//     Swal.fire({
+//           icon: "success",
+//           title: `Ticket ${ticket.id} closed successfully!`,
+//           showConfirmButton: false,
+//           timer: 1000,
+//     })
+//     .then(() => {
+//       navigate("/eng-dash");
+//     });// or wherever you want
+//   } catch (err) {
+//     console.error(err);
+//     alert("Error closing ticket");
+//   }
+// };
 
 
   return (
@@ -271,22 +274,68 @@ const EngViewAssigned = () => {
               <p className="text-gray-600 mt-2 text-m font-medium">
                 <strong>Status:</strong> {ticket.status}
               </p>
-              {(ticket.documents || []).length > 0 && (
-                <p className="text-gray-600 mt-2 text-m font-medium">
-                    <strong>Documents:</strong>{" "}
-                    {(ticket.documents || []).map((doc, i) => (
-                    <a key={i} href="#" className="text-blue-600 underline mr-2">
-                        {doc}
-                    </a>
-                    ))}
-                </p>
-                )}
+              {ticket.documents && ticket.documents.length > 0 && (
+                <div className="mt-4 text-gray-600">
+                  <strong>Attached Documents:</strong>
+                  <div className="flex flex-wrap gap-4 mt-2">
+                    {ticket.documents.map((doc, i) => {
+                      if (isImage(doc)) {
+                        return (
+                          <img
+                            key={i}
+                            src={`http://localhost:5000/${doc}`}
+                            alt={`Document ${i + 1}`}
+                            className="w-32 h-32 object-cover rounded-md shadow-md cursor-pointer hover:scale-105 transition-transform"
+                            onClick={() => window.open(`http://localhost:5000/${doc}`, "_blank")}
+                          />
+                        );
+                      } else if (isPdf(doc)) {
+                        return (
+                          <div
+                            key={i}
+                            className="w-24 h-32 flex flex-col items-center justify-center border rounded cursor-pointer hover:shadow-lg transition-shadow bg-gray-400"
+                            onClick={() => window.open(`http://localhost:5000/${doc}`, "_blank")}
+                          >
+                            <img
+                              src="https://cdn-icons-png.flaticon.com/512/337/337946.png"
+                              alt="PDF Icon"
+                              className="w-12 h-12 mb-2"
+                            />
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <a
+                            key={i}
+                            href={`http://localhost:5000/${doc}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 underline"
+                          >
+                            Download {doc.split("/").pop()}
+                          </a>
+                        );
+                      }
+                    })}
+                  </div>
+                </div>
+              )}
               <p className="text-green-600 mt-2 text-m font-medium">
-                <strong>Assigned Engineer : </strong> {ticket.engineer_name}
+                <strong>Work Completed By : </strong> {ticket.engineer_name}
               </p>
-              <p className="text-green-600 mt-2 text-m font-medium mb-10 pb-10">
+              <p className="text-green-600 mt-2 text-m font-medium mb-4 pb-4">
                 <strong>Engineer Contact Number : </strong>{" "}
                 {ticket.engineer_contact}
+              </p>
+              <p className="text-gray-600 mt-2 text-m font-medium">
+                <strong>Rectification Date & Time :</strong> {ticket.rectification_date}
+              </p>
+              <p className="text-gray-600 mt-2 text-m font-medium">
+                <strong>Work Done Comment</strong> {ticket.work_done_comment}
+              </p>
+              <p className="text-gray-600 mt-2 text-m font-medium">
+                <strong>Closed At:</strong>{" "}
+                {new Date(ticket.closed_at).toLocaleString()}
               </p>
 
               {/* Close Ticket Button below Ticket Details */}
@@ -338,7 +387,7 @@ const EngViewAssigned = () => {
           {/* Close Ticket Section */}
           <form
               className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12"
-              onSubmit={handleCloseTicket}
+              // onSubmit={handleCloseTicket}
             >
               {/* Left Column */}
               {/* <div className="space-y-4">
@@ -386,4 +435,4 @@ const EngViewAssigned = () => {
   );
 };
 
-export default EngViewAssigned;
+export default EngViewClosed;
