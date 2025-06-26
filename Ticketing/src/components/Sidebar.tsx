@@ -1,10 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { FaTachometerAlt, FaHistory } from "react-icons/fa";
 import { FaTicket } from "react-icons/fa6";
 import { useNavigate, NavLink } from "react-router-dom";
 import Swal from "sweetalert2";
 import {jwtDecode} from "jwt-decode";
-import Profile from "../assets/test-profile.jpg";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -19,6 +18,7 @@ interface DecodedToken {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const navigate = useNavigate();
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
 
   let customerName = "Guest";
   let customerEmail = "guest@example.com";
@@ -36,6 +36,49 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       localStorage.removeItem("cusToken");
     }
   }
+
+  useEffect(() => {
+        const token = localStorage.getItem("cusToken");
+        if (!token) {
+          Swal.fire("Error", "Authentication token missing. Please login again.", "error");
+          return;
+        }
+  
+        const baseUrl = "http://localhost:5000";
+  
+        fetch(`${baseUrl}/api/customers/profile`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        })
+          .then(async (res) => {
+            if (!res.ok) {
+              const errorData = await res.json().catch(() => null);
+              throw new Error(errorData?.error || "Failed to fetch profile");
+            }
+            return res.json();
+          })
+          .then((data) => {
+  
+            if (data.profile_image) {
+              // Use the full URL returned from backend
+              const imageUrl = data.profile_image.startsWith('http') 
+                ? data.profile_image 
+                : `${baseUrl}${data.profile_image}`;
+              setProfileImagePreview(imageUrl + `?t=${Date.now()}`);
+            } else {
+              setProfileImagePreview(null);
+            }
+          })
+          .catch((err) => {
+            console.error(err);
+            Swal.fire("Error", err.message || "Failed to load profile data", "error");
+          });
+      }, []);
+
+
 
   const handleLogout = () => {
     Swal.fire({
@@ -70,12 +113,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         {/* User Profile */}
         <div className="flex items-center space-x-4 mb-6 pb-4 border-b pt-10 justify-center">
           <div>
-            <img
-              src={Profile}
-              alt="User"
-              className="w-16 h-16 rounded-full object-cover border border-gray-300 mx-auto cursor-pointer mb-2"
-              onClick={() => navigate("/profile")}
-            />
+            {profileImagePreview ? (
+                  <img
+                    src={profileImagePreview}
+                    alt="Profile"
+                    className="w-16 h-16 rounded-full object-cover border border-gray-300 mx-auto cursor-pointer mb-2"
+                    onClick={() => navigate("/profile")}
+                  />
+                ) : (
+                  <div onClick={() => navigate("/profile")} className="w-16 h-16 rounded-full border-4 border-gray-300 bg-gray-200 flex items-center justify-center text-gray-500 object-cover mx-auto cursor-pointer text-center">
+                    USER
+                  </div>
+                )}
             <p className="font-semibold text-[#000000] text-base font-jura text-center">
               {customerName}
             </p>

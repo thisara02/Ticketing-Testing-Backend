@@ -1,88 +1,23 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Sidebar from "../../components/Sidebar";
-import Navbar from "../../components/Navbar";
-import ProfileImage from "../../assets/test-profile.jpg"; // Replace with actual path
+import Navbar from "../../components/Navbar";// Replace with actual path
 import { FaCamera } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 
 const CusProfile = () => {
-
-  const navigate = useNavigate();
-
-  const ProfileEdited = () => {
-        Swal.fire({
-          title: "Your Changes Saved Sucessfully",
-          text: "Your profile changes has been saved sucessfully",
-          icon: "info",
-          showCancelButton: false,
-          confirmButtonColor: "#f5365c",
-          cancelButtonColor: "#3085d6",
-          confirmButtonText: "Continue",
-          cancelButtonText: "Cancel",
-          customClass: {
-          popup: "swal2-text-black",
-          confirmButton: "swal2-confirm-button",
-          cancelButton: "swal2-cancel-button"}
-  
-        }).then((result) => {
-          if (result.isConfirmed) {
-            // Perform logout logic (e.g., clear auth tokens, call API, etc.)
-            // Then navigate to the login page
-            navigate("/profile");
-          }
-        });
-      };
-
-      const NewPass = () => {
-        Swal.fire({
-          title: "Your Password Changed Sucessfully",
-          text: "Your profile password has been changed sucessfully.",
-          icon: "info",
-          showCancelButton: false,
-          confirmButtonColor: "#f5365c",
-          cancelButtonColor: "#3085d6",
-          confirmButtonText: "Continue",
-          cancelButtonText: "Cancel",
-          customClass: {
-          popup: "swal2-text-black",
-          confirmButton: "swal2-confirm-button",
-          cancelButton: "swal2-cancel-button"}
-  
-        }).then((result) => {
-          if (result.isConfirmed) {
-            // Perform logout logic (e.g., clear auth tokens, call API, etc.)
-            // Then navigate to the login page
-            navigate("/profile");
-          }
-        });
-      };
-
-    const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-const handleImageClick = () => {
-  if (fileInputRef.current) {
-    fileInputRef.current.click(); // Trigger file input on icon click
-  }
-};
-
-const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (file) {
-    // You can handle preview upload or send it to server here
-    console.log("Selected image:", file);
-  }
-};
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
 
   const [formData, setFormData] = useState({
-    name: "Thisara Madusanka",
-    email: "thisaram@lankacom.net",
-    designation: "Internship Trainee",
-    mobile: "0740563227",
-    company: "LankaCom",
-    address: "123, Main Street, Colombo",
+    name: "",
+    email: "",
+    mobile: "",
+    designation: "",
+    company: "",
   });
+
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
 
   const [passwords, setPasswords] = useState({
     oldPassword: "",
@@ -95,12 +30,73 @@ const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     confirmNewPassword: "",
   });
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!isSidebarOpen);
-  };
+  // Update the useEffect to handle the full URL properly
+useEffect(() => {
+  const token = localStorage.getItem("cusToken");
+  if (!token) {
+    Swal.fire("Error", "Authentication token missing. Please login again.", "error");
+    return;
+  }
+
+  const baseUrl = "http://localhost:5000";
+
+  fetch(`${baseUrl}/api/customers/profile`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.error || "Failed to fetch profile");
+      }
+      return res.json();
+    })
+    .then((data) => {
+      setFormData({
+        name: data.name || "",
+        email: data.email || "",
+        mobile: data.mobile || "",
+        designation: data.designation || "",
+        company: data.company || "",
+      });
+
+      if (data.profile_image) {
+        // Use the full URL returned from backend
+        const imageUrl = data.profile_image.startsWith('http') 
+          ? data.profile_image 
+          : `${baseUrl}${data.profile_image}`;
+        setProfileImagePreview(imageUrl + `?t=${Date.now()}`);
+      } else {
+        setProfileImagePreview(null);
+      }
+    })
+    .catch((err) => {
+      console.error(err);
+      Swal.fire("Error", err.message || "Failed to load profile data", "error");
+    });
+}, []);
+
+  const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfileImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setProfileImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,37 +105,103 @@ const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPasswords(updatedPasswords);
 
     if (name === "newPassword") {
-        const pwd = value;
-        let errorMsg = "";
+      let errorMsg = "";
+      if (value.length < 8) errorMsg = "Password must be at least 8 characters long.";
+      else if (!/[A-Z]/.test(value)) errorMsg = "Password must include at least one uppercase letter.";
+      else if (!/[a-z]/.test(value)) errorMsg = "Password must include at least one lowercase letter.";
+      else if (!/[0-9]/.test(value)) errorMsg = "Password must include at least one number.";
+      else if (!/[!@#$%^&*]/.test(value)) errorMsg = "Password must include at least one special character.";
 
-        if (pwd.length < 8) {
-            errorMsg = "Password must be at least 8 characters long.";
-        } else if (!/[A-Z]/.test(pwd)) {
-            errorMsg = "Password must include at least one uppercase letter.";
-        } else if (!/[a-z]/.test(pwd)) {
-            errorMsg = "Password must include at least one lowercase letter.";
-        } else if (!/[0-9]/.test(pwd)) {
-            errorMsg = "Password must include at least one number.";
-        } else if (!/[!@#$%^&*]/.test(pwd)) {
-            errorMsg = "Password must include at least one special character.";
-        }
+      setErrors((prev) => ({ ...prev, newPassword: errorMsg }));
+    }
 
-        setErrors((prev) => ({
-            ...prev,
-            newPassword: errorMsg,
-        }));
-     }
-
-    if (
-      name === "confirmNewPassword" &&
-      value !== updatedPasswords.newPassword
-    ) {
+    if (name === "confirmNewPassword") {
       setErrors((prev) => ({
         ...prev,
-        confirmNewPassword: "Passwords do not match.",
+        confirmNewPassword: value !== updatedPasswords.newPassword ? "Passwords do not match." : "",
       }));
-    } else {
-      setErrors((prev) => ({ ...prev, confirmNewPassword: "" }));
+    }
+  };
+
+  const saveProfile = async () => {
+  const token = localStorage.getItem("cusToken");
+  if (!token) {
+    Swal.fire("Error", "Authentication token missing. Please login again.", "error");
+    return;
+  }
+
+  try {
+    const formPayload = new FormData();
+    formPayload.append("name", formData.name);
+    formPayload.append("mobilep", formData.mobile); 
+    formPayload.append("designation", formData.designation);
+    formPayload.append("company", formData.company);
+    if (profileImageFile) formPayload.append("profile_image", profileImageFile);
+
+    const res = await fetch("http://localhost:5000/api/customers/profile", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formPayload,
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to save profile");
+
+    // Update the profile image preview with the new URL
+    if (data.profile && data.profile.profile_image) {
+      const baseUrl = "http://localhost:5000";
+      const imageUrl = data.profile.profile_image.startsWith('http') 
+        ? data.profile.profile_image 
+        : `${baseUrl}${data.profile.profile_image}`;
+      setProfileImagePreview(imageUrl + `?t=${Date.now()}`);
+    }
+
+    // Clear the file input
+    setProfileImageFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+
+    Swal.fire("Success", "Your profile changes have been saved successfully", "success");
+  } catch (error: any) {
+    Swal.fire("Error", error.message || "Failed to save profile", "error");
+  }
+};
+
+  const changePassword = async () => {
+    if (errors.newPassword || errors.confirmNewPassword) {
+      Swal.fire("Error", "Please fix password errors before submitting", "error");
+      return;
+    }
+
+    const token = localStorage.getItem("cusToken");
+    if (!token) {
+      Swal.fire("Error", "Authentication token missing. Please login again.", "error");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:5000/api/customers/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          oldPassword: passwords.oldPassword,
+          newPassword: passwords.newPassword,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to change password");
+
+      Swal.fire("Success", "Your password has been changed successfully", "success");
+      setPasswords({ oldPassword: "", newPassword: "", confirmNewPassword: "" });
+    } catch (error: any) {
+      Swal.fire("Error", error.message || "Failed to change password", "error");
     }
   };
 
@@ -163,28 +225,31 @@ const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
             <div className="flex justify-center mb-6">
                 <div className="relative w-32 h-32">
-                    <img
-                    src={ProfileImage}
+                  {profileImagePreview ? (
+                  <img
+                    src={profileImagePreview}
                     alt="Profile"
-                    className="w-full h-full rounded-full object-cover border-4 border-gray-300 "
-                    />
-
-                    {/* Camera icon overlay */}
-                    <div
-                    onClick={handleImageClick}
-                    className="absolute bottom-0 right-0 bg-white p-1.5 rounded-full shadow cursor-pointer hover:bg-gray-100 transition"
-                    >
-                    <FaCamera className="text-gray-600" />
-                    </div>
-
-                    {/* Hidden file input */}
-                    <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    ref={fileInputRef}
-                    onChange={handleImageChange}
-                    />
+                    className="w-full h-full rounded-full object-cover border-4 border-gray-300"
+                  />
+                ) : (
+                  <div className="w-full h-full rounded-full border-4 border-gray-300 bg-gray-200 flex items-center justify-center text-gray-500">
+                    No Image
+                  </div>
+                )}
+                <div
+                  onClick={handleImageClick}
+                  className="absolute bottom-0 right-0 bg-white p-1.5 rounded-full shadow cursor-pointer hover:bg-gray-100 transition"
+                  title="Change Profile Picture"
+                >
+                  <FaCamera className="text-gray-600" />
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                />
                 </div>
             </div>
 
@@ -252,23 +317,13 @@ const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                   className="mt-1 w-full border border-gray-300 rounded px-3 py-2 bg-gray-100 cursor-not-allowed text-black font-jura"
                 />
               </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 font-jura">
-                  Address
-                </label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  readOnly
-                  className="mt-1 w-full border border-gray-300 rounded px-3 py-2 bg-gray-100 cursor-not-allowed text-black font-jura"
-                />
-              </div>
             </div>
 
             <div className="mt-6 flex justify-end">
-              <button className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition font-jura" onClick={ProfileEdited}>
+              <button
+                className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition font-jura"
+                onClick={saveProfile}
+              >
                 Save Edits
               </button>
             </div>
@@ -282,10 +337,8 @@ const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 font-jura">
-                  Old Password
-                </label>
+                            <div>
+                <label className="block text-sm font-medium text-gray-700 font-jura">Old Password</label>
                 <input
                   type="password"
                   name="oldPassword"
@@ -294,10 +347,9 @@ const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                   className="mt-1 w-full border border-gray-300 rounded px-3 py-2 bg-white text-black font-jura"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 font-jura">
-                  New Password
-                </label>
+                <label className="block text-sm font-medium text-gray-700 font-jura">New Password</label>
                 <input
                   type="password"
                   name="newPassword"
@@ -306,16 +358,15 @@ const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                   className="mt-1 w-full border border-gray-300 rounded px-3 py-2 bg-white text-black font-jura"
                 />
                 {errors.newPassword && (
-                    <div className="text-red-500 text-sm mt-1 space-y-1 font-jura">
-                        <p>Password not meet the required validations:</p>
-                    </div>
+                  <div className="text-red-500 text-sm mt-1 font-jura space-y-1">
+                    <p>Password validation failed:</p>
+                    <p>{errors.newPassword}</p>
+                  </div>
                 )}
-
               </div>
+
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 font-jura">
-                  Confirm New Password
-                </label>
+                <label className="block text-sm font-medium text-gray-700 font-jura">Confirm New Password</label>
                 <input
                   type="password"
                   name="confirmNewPassword"
@@ -324,26 +375,26 @@ const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                   className="mt-1 w-full border border-gray-300 rounded px-3 py-2 bg-white text-black font-jura"
                 />
                 {errors.confirmNewPassword && (
-                  <p className="text-red-500 text-sm mt-1 font-jura">
-                    {errors.confirmNewPassword}
-                  </p>
+                  <p className="text-red-500 text-sm mt-1 font-jura">{errors.confirmNewPassword}</p>
                 )}
               </div>
             </div>
 
-            <div className="text-red-500 text-sm mt-1 space-y-1 mb-4 font-jura">
-                <p>Password must be:</p>
-                <ul className="list-disc pl-5">
-                <li>Be at least 8 characters long</li>
-                <li>Contain at least one uppercase letter</li>
-                <li>Contain at least one lowercase letter</li>
-                <li>Include at least one number</li>
-                <li>Have at least one special character (!@#$%^&*)</li>
-                </ul>
+            <div className="text-red-500 text-sm mb-4 font-jura">
+              <ul className="list-disc pl-5 space-y-1">
+                <li>At least 8 characters</li>
+                <li>One uppercase letter</li>
+                <li>One lowercase letter</li>
+                <li>One number</li>
+                <li>One special character (!@#$%^&*)</li>
+              </ul>
             </div>
 
             <div className="mt-4 flex justify-end">
-              <button className="bg-blue-600 text-white px-6 py-2 rounded hover:bg--700 transition font-jura" onClick={NewPass}>
+              <button
+                className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition font-jura"
+                onClick={changePassword}
+              >
                 Change Password
               </button>
             </div>

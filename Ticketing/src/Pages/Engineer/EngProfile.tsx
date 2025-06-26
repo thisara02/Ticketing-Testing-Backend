@@ -213,7 +213,7 @@ useEffect(() => {
         <div className="flex-1 overflow-y-auto bg-gray-100 p-6">
           <div className="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow">
             <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6 font-jura">
-              Engineer Edit Profile
+               Edit Profile
             </h2>
 
             {/* Profile Image Section */}

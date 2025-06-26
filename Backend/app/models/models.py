@@ -18,6 +18,7 @@ class Customer(db.Model):
     company = db.Column(db.String(120))
     password = db.Column(db.String(255), nullable=False)
     subscription = db.Column(db.String(50))
+    profile_image = db.Column(db.String(255), nullable=True) 
     
     def set_password(self, password):
         self.password = generate_password_hash(password)
