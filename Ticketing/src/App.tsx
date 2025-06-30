@@ -65,7 +65,7 @@ const App: React.FC = () => {
       <Route path="/land" element={<Landing />} />
       <Route path="/pending" element={<Pending />} />
       <Route path="/history" element={<History />} />
-      <Route path="/view-closed" element={<ViewClosed />} />
+      <Route path="/view-closed/:ticketId" element={<ViewClosed />} />
       <Route path="/view-sr" element={<ViewSR />} />
       <Route path="/create-sr" element={<CreateSR />} />
       <Route path="/create-ft" element={<CreateFT />} />

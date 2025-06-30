@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "../../components/Sidebar";
 import Navbar from "../../components/Navbar";
 import { useNavigate } from "react-router-dom";
@@ -17,63 +17,37 @@ type Ticket = {
 const History = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<"Pending" | "Ongoing" | "Closed">("Pending");
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const tickets: Ticket[] = [
-    {
-      id: "#123456",
-      subject: "VPN not working",
-      ticketType: "Faulty Ticket",
-      description: "Unable to connect to VPN from home.",
-      createdDate: "2020/05/29 19:12",
-      assignedEngineer: "Engineer A",
-      status: "Ongoing",
-    },
-    {
-      id: "#789012",
-      subject: "Install antivirus",
-      ticketType: "Service Request",
-      description: "Request to install McAfee antivirus.",
-      createdDate: "2020/05/29 19:12",
-      status: "Pending",
-    },
-    {
-      id: "#456789",
-      subject: "Replace broken keyboard",
-      ticketType: "Faulty Ticket",
-      description: "Keyboard keys are not working properly.",
-      createdDate: "2020/05/29 19:12",
-      assignedEngineer: "Engineer B",
-      status: "Closed",
-    },
-    {
-      id: "#222333",
-      subject: "Email setup",
-      ticketType: "Service Request",
-      description: "Setup new email account.",
-      createdDate: "2020/05/29 19:12",
-      assignedEngineer: "Engineer C",
-      status: "Pending",
-    },
-    {
-      id: "#444555",
-      subject: "Computer slow",
-      ticketType: "Faulty Ticket",
-      description: "PC is very slow.",
-      createdDate: "2020/05/29 19:12",
-      assignedEngineer: "Engineer A",
-      status: "Ongoing",
-    },
-    {
-      id: "#666777",
-      subject: "Printer issue",
-      ticketType: "Faulty Ticket",
-      description: "Printer not working.",
-      createdDate: "2020/05/29 19:12",
-      assignedEngineer: "Engineer D",
-      status: "Closed",
-    },
-  ];
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        const token = localStorage.getItem("cusToken");
+        const res = await fetch("http://localhost:5000/api/customers/ticket-history", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || "Failed to fetch tickets");
+        }
+
+        const data: Ticket[] = await res.json();
+        setTickets(data);
+      } catch (err: any) {
+        setError(err.message || "Something went wrong");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTickets();
+  }, []);
 
   const filteredTickets = tickets.filter((ticket) => ticket.status === activeTab);
 
@@ -103,27 +77,24 @@ const History = () => {
     }
   };
 
-  // Navigation based on status
   const handleNavigate = (ticket: Ticket) => {
-    if (ticket.status === "Pending") {
-      navigate("/view-pending");
-    } else if (ticket.status === "Ongoing") {
-      navigate("/viewon");
-    } else if (ticket.status === "Closed") {
-      navigate("/view-closed");
-    }
-  };
+  if (ticket.status === "Pending") {
+    navigate(`/view-pending/${ticket.id}`);
+  } else if (ticket.status === "Ongoing") {
+    navigate(`/viewon/${ticket.id}`);
+  } else if (ticket.status === "Closed") {
+    navigate(`/view-closed/${ticket.id}`);
+  }
+};
+
 
   return (
     <div className="h-screen w-screen flex bg-gray-100 overflow-hidden">
-      {/* Sidebar */}
       <div className="flex-shrink-0">
         <Sidebar isOpen={isSidebarOpen} />
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col w-full">
-        {/* Navbar */}
         <Navbar toggleSidebar={() => setSidebarOpen(!isSidebarOpen)} />
 
         <main className="p-6 flex-1 overflow-auto font-jura">
@@ -132,7 +103,6 @@ const History = () => {
               Issue History
             </h1>
 
-            {/* Tabs */}
             <div className="flex space-x-4 mb-6">
               {(["Pending", "Ongoing", "Closed"] as const).map((tab) => (
                 <button
@@ -149,8 +119,11 @@ const History = () => {
               ))}
             </div>
 
-            {/* Tickets */}
-            {filteredTickets.length === 0 ? (
+            {loading ? (
+              <p className="text-gray-500">Loading tickets...</p>
+            ) : error ? (
+              <p className="text-red-500">{error}</p>
+            ) : filteredTickets.length === 0 ? (
               <p className="text-gray-600">No tickets in this category.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

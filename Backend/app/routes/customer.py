@@ -917,3 +917,107 @@ def change_cus_password():
     db.session.commit()
 
     return jsonify({"message": "Password changed successfully"})
+
+
+@customer_bp.route('/ticket-history', methods=['GET'])
+def get_customer_ticket_history():
+    auth_header = request.headers.get("Authorization", None)
+    if not auth_header:
+        return jsonify({"error": "Authorization header missing"}), 401
+
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return jsonify({"error": "Invalid Authorization header format"}), 401
+
+    token = parts[1]
+    try:
+        secret = current_app.config['SECRET_KEY']
+        decoded = jwt.decode(token, secret, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Token expired"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Invalid token"}), 401
+
+    company = decoded.get("company")
+    if not company:
+        return jsonify({"error": "Company not found in token"}), 400
+
+    # Query all tickets for this company
+    tickets = Ticket.query.filter(Ticket.requester_company == company).order_by(Ticket.created_at.desc()).all()
+
+    ticket_list = []
+    for ticket in tickets:
+        ticket_list.append({
+            "id":ticket.id,
+            "subject": ticket.subject,
+            "ticketType": ticket.type,
+            "description": ticket.description,
+            "createdDate": ticket.created_at.strftime("%Y/%m/%d %H:%M") if ticket.created_at else "",
+            "assignedEngineer": ticket.engineer_name if ticket.engineer_name else None,
+            "status": ticket.status
+        })
+
+    return jsonify(ticket_list), 200
+
+
+
+@customer_bp.route('/closetickets/<int:ticket_id>', methods=['GET'])
+def get_customer_closeticket_details(ticket_id):
+    auth_header = request.headers.get("Authorization", None)
+    if not auth_header:
+        return jsonify({"error": "Authorization header missing"}), 401
+
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return jsonify({"error": "Invalid Authorization header format"}), 401
+
+    token = parts[1]
+    try:
+        secret = current_app.config['SECRET_KEY']
+        decoded = jwt.decode(token, secret, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Token expired"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Invalid token"}), 401
+
+    # Query the specific ticket for this company
+    ticket = Ticket.query.filter(
+        Ticket.id == ticket_id,
+    ).first()
+
+    if not ticket:
+        return jsonify({"error": "Ticket not found or access denied"}), 404
+
+    # Get comments for this ticket
+    comments = Comment.query.filter(Comment.ticket_id == ticket_id).order_by(Comment.timestamp.asc()).all()
+    comments_data = [{
+        "id": c.id,
+        "author": c.author_name,
+        "timestamp": c.timestamp.isoformat(),
+        "content": c.message,
+        "role": c.author_role
+    } for c in comments]
+
+    ticket_data = {
+        "id": ticket.id,
+        "subject": ticket.subject,
+        "type": ticket.type,
+        "description": ticket.description,
+        "requester_name": ticket.requester_name,
+        "requester_email": ticket.requester_email,
+        "requester_contact": ticket.requester_contact,
+        "created_at": ticket.created_at.isoformat() if ticket.created_at else None,
+        "engineer_name":ticket.engineer_name,
+        "engineer_contact":ticket.engineer_contact,
+        "status": ticket.status,
+        "documents": [ticket.documents] if ticket.documents else [],
+        "work_done_comment":ticket.work_done_comment,
+        "rectification_date":ticket.rectification_date.isoformat() if ticket.rectification_date else None,
+        "closed_at": ticket.closed_at.isoformat() if ticket.closed_at else None,
+    }
+
+    return jsonify({
+        "ticket": ticket_data,
+        "comments": comments_data
+    })
+
