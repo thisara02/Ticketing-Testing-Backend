@@ -617,7 +617,7 @@ def send_comment_notification_to_requester(requester_email, requester_name, tick
                 </div>
                 <p>Dear {requester_name},</p>
                 <p>An engineer has posted a new comment on your ticket:</p>
-                <p><strong>Ticket ID:</strong> SR-{ticket_id:06d}<br>
+                <p><strong>Ticket ID:</strong>{ticket_id:06d}<br>
                    <strong>Subject:</strong> {subject}</p>
 
                 <div class="comment-box">
@@ -627,7 +627,7 @@ def send_comment_notification_to_requester(requester_email, requester_name, tick
                 <p>Please log in to your support portal to reply or view further updates.</p>
                 <p>Best regards,<br><strong>Cyber Security Operations Team</strong></p>
                 <div class="footer">
-                    This is an automated message. Do not reply.
+                    *This is an automated message. Do not reply.
                 </div>
             </div>
         </body>
@@ -639,7 +639,7 @@ def send_comment_notification_to_requester(requester_email, requester_name, tick
 
         An engineer has posted a new comment on your ticket:
 
-        Ticket ID: SR-{ticket_id:06d}
+        Ticket ID: {ticket_id:06d}
         Subject: {subject}
 
         Comment:
@@ -661,6 +661,105 @@ def send_comment_notification_to_requester(requester_email, requester_name, tick
 
     except Exception as e:
         print(f"Failed to send comment notification email: {e}")
+        return False
+
+def notify_engineer_about_customer_comment(engineer_email, ticket_id, subject, comment_content, customer_name):
+    """Notify assigned engineer when a customer comments on a ticket"""
+    try:
+        msg = Message(
+            subject=f"Customer Comment on Ticket #{ticket_id:06d}",
+            recipients=[engineer_email],
+            sender=current_app.config['MAIL_DEFAULT_SENDER']
+        )
+
+        msg.html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    background-color: #f9fafb;
+                    padding: 20px;
+                }}
+                .container {{
+                    background-color: #ffffff;
+                    max-width: 600px;
+                    margin: auto;
+                    padding: 25px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+                }}
+                .header {{
+                    background-color: #2563eb;
+                    color: white;
+                    padding: 15px;
+                    text-align: center;
+                    border-radius: 6px 6px 0 0;
+                }}
+                .content {{
+                    color: #333333;
+                    padding: 20px 0;
+                }}
+                .comment-box {{
+                    background-color: #f1f5f9;
+                    padding: 15px;
+                    border-left: 4px solid #2563eb;
+                    margin-top: 10px;
+                    font-style: italic;
+                }}
+                .footer {{
+                    font-size: 12px;
+                    color: #6b7280;
+                    text-align: center;
+                    margin-top: 30px;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>New Comment from Customer</h2>
+                </div>
+                <div class="content">
+                    <p><strong>Customer:</strong> {customer_name}</p>
+                    <p><strong>Ticket ID:</strong> SR-{ticket_id:06d}</p>
+                    <p><strong>Subject:</strong> {subject}</p>
+                    <p><strong>Comment:</strong></p>
+                    <div class="comment-box">
+                        {comment_content}
+                    </div>
+                    <p>Please log in to the support portal to respond to this comment.</p>
+                </div>
+                <div class="footer">
+                    This is an automated message. Please do not reply.
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        msg.body = f"""
+        New Comment from Customer
+        Customer: {customer_name}
+        Ticket ID: SR-{ticket_id:06d}
+        Subject: {subject}
+
+        Comment:
+        {comment_content}
+
+        Please log in to the support portal to reply.
+
+        ---
+        This is an automated message. Please do not reply.
+        """
+
+        thread = threading.Thread(target=send_async_email, args=(current_app._get_current_object(), msg))
+        thread.start()
+
+        return True
+    except Exception as e:
+        print(f"Failed to send engineer comment notification: {e}")
         return False
 
 # Import datetime at the top of the file

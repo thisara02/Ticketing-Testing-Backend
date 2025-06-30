@@ -10,11 +10,13 @@ import jwt
 from datetime import datetime, timedelta
 from app.models import Ticket
 from app.models import Comment
+from app.models import Engineer
 from pytz import timezone
 from app.models import LoginAttempt
 from app.utils.email_utils import send_otp_email
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from app.models import OTPModel
+from app.utils.email_utils import notify_engineer_about_customer_comment
 
 customer_bp = Blueprint("customer", __name__, url_prefix="/api/customers")  # Adjust prefix to match frontend
 
@@ -443,12 +445,11 @@ def add_ticket_comment(ticket_id):
         return jsonify({"error": "Invalid token"}), 401
 
     company = decoded.get("company")
-    customer_name = decoded.get("name", "Customer")  # Get customer name from token
-    
+    customer_name = decoded.get("name", "Customer")
+
     if not company:
         return jsonify({"error": "Company not found in token"}), 400
 
-    # Verify ticket exists and belongs to this company
     ticket = Ticket.query.filter(
         Ticket.id == ticket_id,
         Ticket.requester_company == company
@@ -472,11 +473,10 @@ def add_ticket_comment(ticket_id):
             message=content,
             timestamp=datetime.now(timezone('Asia/Colombo'))
         )
-        
+
         db.session.add(comment)
         db.session.commit()
 
-        # Return the created comment
         new_comment = {
             "id": comment.id,
             "author": comment.author_name,
@@ -486,9 +486,10 @@ def add_ticket_comment(ticket_id):
         }
 
         return jsonify(new_comment), 201
-        
+
     except Exception as e:
         db.session.rollback()
+        print(f"Failed to create comment: {e}")
         return jsonify({"error": "Failed to create comment"}), 500
     
     
@@ -574,12 +575,11 @@ def add_onticket_comment(ticket_id):
         return jsonify({"error": "Invalid token"}), 401
 
     company = decoded.get("company")
-    customer_name = decoded.get("name", "Customer")  # Get customer name from token
-    
+    customer_name = decoded.get("name", "Customer")
+
     if not company:
         return jsonify({"error": "Company not found in token"}), 400
 
-    # Verify ticket exists and belongs to this company
     ticket = Ticket.query.filter(
         Ticket.id == ticket_id,
         Ticket.requester_company == company
@@ -599,15 +599,31 @@ def add_onticket_comment(ticket_id):
         comment = Comment(
             ticket_id=ticket_id,
             author_name=customer_name,
-            author_role='Customer',
+            author_role='customer',
             message=content,
             timestamp=datetime.now(timezone('Asia/Colombo'))
         )
-        
+
         db.session.add(comment)
         db.session.commit()
 
-        # Return the created comment
+        # ✅ Get engineer's email based on engineer_name from ticket
+        engineer = Engineer.query.filter_by(name=ticket.engineer_name).first()
+        if engineer and engineer.email:
+            print("DEBUG: Sending email to engineer about new customer comment")
+            print(" - Email:", engineer.email)
+            print(" - Engineer Name:", engineer.name)
+            print(" - Ticket ID:", ticket.id)
+            print(" - Subject:", ticket.subject)
+            print(" - Comment Content:", content)
+            notify_engineer_about_customer_comment(
+                engineer_email=engineer.email,
+                ticket_id=ticket.id,
+                subject=ticket.subject,
+                comment_content=content,
+                customer_name=customer_name
+            )
+
         new_comment = {
             "id": comment.id,
             "author": comment.author_name,
@@ -617,9 +633,10 @@ def add_onticket_comment(ticket_id):
         }
 
         return jsonify(new_comment), 201
-        
+
     except Exception as e:
         db.session.rollback()
+        print(f"Failed to create comment: {e}")
         return jsonify({"error": "Failed to create comment"}), 500
     
     
@@ -962,7 +979,7 @@ def get_customer_ticket_history():
 
 
 @customer_bp.route('/closetickets/<int:ticket_id>', methods=['GET'])
-def get_customer_closeticket_details(ticket_id):
+def get_cus_closeticket_details(ticket_id):
     auth_header = request.headers.get("Authorization", None)
     if not auth_header:
         return jsonify({"error": "Authorization header missing"}), 401
