@@ -72,13 +72,13 @@ button:focus-visible {
 
 @keyframes glow {
   0% {
-    text-shadow: 0 0 5px #fff, 0 0 10px #ff4d4d, 0 0 20px #ff4d4d, 0 0 40px #ff4d4d;
+    text-shadow: 0 0 5px #fff, 0 0 10px #008400, 0 0 20px #008400, 0 0 40px #008400;
   }
   50% {
-    text-shadow: 0 0 10px #fff, 0 0 20px #ff1a1a, 0 0 30px #ff1a1a, 0 0 60px #ff1a1a;
+    text-shadow: 0 0 10px #fff, 0 0 20px #008400, 0 0 30px #008400, 0 0 60px #008400;
   }
   100% {
-    text-shadow: 0 0 5px #fff, 0 0 10px #ff4d4d, 0 0 20px #ff4d4d, 0 0 40px #ff4d4d;
+    text-shadow: 0 0 5px #fff, 0 0 10px #008400, 0 0 20px #008400, 0 0 40px #008400;
   }
 }
 

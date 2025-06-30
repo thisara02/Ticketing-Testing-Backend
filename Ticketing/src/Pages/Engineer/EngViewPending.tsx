@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import Sidebar from "../../components/EngSide";
 import Navbar from "../../components/EngNav";
 import { useParams } from "react-router-dom";
+import Swal from "sweetalert2";
+import { useNavigate } from "react-router-dom"; // Add at the top
 
 interface Ticket {
   id: string;
@@ -33,12 +35,68 @@ const EngViewPending = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  
+  const [, setPendingRequests] = useState<Ticket[]>([]);
+
+  
+  const navigate = useNavigate(); // Add inside your component
+
   // Check if URL is image
   const isImage = (url: string) => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
   // Check if URL is PDF
   const isPdf = (url: string) => /\.pdf$/i.test(url);
 
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
+
+  const handleAssign = async (id: string) => {
+    Swal.fire({
+      title: "Assign Ticket",
+      text: `Are you sure you want to assign ticket ${id}?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes, assign it!",
+      cancelButtonText: "Cancel",
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: "bg-green-500 text-white px-4 py-2 rounded mr-2",
+        cancelButton: "bg-gray-100 text-black px-4 py-2 rounded mr-2",
+      },
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const token = localStorage.getItem("engToken");
+  
+          const response = await fetch(`http://localhost:5000/api/ticket/assign/${id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          });
+  
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+  
+          Swal.fire({
+          title: "Assigned!",
+          text: `Ticket ${id} has been assigned.`,
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+        }).then(() => {
+          navigate("/eng-dash"); // 🔁 Navigate after success alert
+        });
+  
+          // Optionally refresh pending tickets list
+          setPendingRequests((prev) => prev.filter((ticket) => ticket.id !== id));
+        } catch (error) {
+          console.error("Error assigning ticket:", error);
+          Swal.fire("Error", "Failed to assign ticket", "error");
+        }
+      }
+    });
+  };
 
   useEffect(() => {
     const fetchTicketDetails = async () => {
@@ -249,6 +307,13 @@ const EngViewPending = () => {
                   </div>
                 </div>
               )}
+              <button
+                  className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-blue-400 transition"
+                  onClick={() => handleAssign(ticket.id)}
+                  
+                >
+                  Assign
+                </button>
             </div>
 
             {/* Right Section (1/3): Comments */}
