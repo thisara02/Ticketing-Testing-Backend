@@ -497,15 +497,15 @@ def notify_new_pending_ft_to_engineer(ticket_id, subject, priority, description,
         print(f"Failed to send engineer notification email: {str(e)}")
         return False
     
-def notify_new_pending_sr_to_engineer(ticket_id, subject, priority, description, requester_name, requester_company):
+def notify_new_pending_sr_to_engineer(ticket_id, subject, priority, description, requester_name, requester_company,recipient_emails):
     """Send notification to fixed engineer email when a new pending ticket is created"""
     try:
-        engineer_email = "shammid@lankacom.net"
+        engineer_email = recipient_emails
         engineer_name = "Engineer Team"
 
         msg = Message(
             subject='New Pending Service Request Available',
-            recipients=[engineer_email],
+            recipients=engineer_email,
             sender=current_app.config['MAIL_DEFAULT_SENDER']
         )
 
@@ -588,6 +588,80 @@ def notify_new_pending_sr_to_engineer(ticket_id, subject, priority, description,
         print(f"Failed to send engineer notification email: {str(e)}")
         return False
 
+
+def send_comment_notification_to_requester(requester_email, requester_name, ticket_id, subject, comment_content):
+    """Notify customer when an engineer comments on their ticket"""
+    try:
+        msg = Message(
+            subject=f"New Comment on Your Ticket #{ticket_id:06d}",
+            recipients=[requester_email],
+            sender=current_app.config['MAIL_DEFAULT_SENDER']
+        )
+
+        msg.html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; background-color: #f9fafb; padding: 20px; }}
+                .container {{ background-color: #ffffff; padding: 30px; border-radius: 10px; max-width: 600px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }}
+                .header {{ background-color: #3b82f6; color: white; padding: 15px; text-align: center; border-radius: 5px; }}
+                .comment-box {{ background-color: #f1f5f9; padding: 15px; border-left: 4px solid #3b82f6; margin: 20px 0; }}
+                .footer {{ font-size: 12px; color: #888; text-align: center; margin-top: 30px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>New Comment on Your Ticket</h2>
+                </div>
+                <p>Dear {requester_name},</p>
+                <p>An engineer has posted a new comment on your ticket:</p>
+                <p><strong>Ticket ID:</strong> SR-{ticket_id:06d}<br>
+                   <strong>Subject:</strong> {subject}</p>
+
+                <div class="comment-box">
+                    <p>{comment_content}</p>
+                </div>
+
+                <p>Please log in to your support portal to reply or view further updates.</p>
+                <p>Best regards,<br><strong>Cyber Security Operations Team</strong></p>
+                <div class="footer">
+                    This is an automated message. Do not reply.
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        msg.body = f"""
+        Dear {requester_name},
+
+        An engineer has posted a new comment on your ticket:
+
+        Ticket ID: SR-{ticket_id:06d}
+        Subject: {subject}
+
+        Comment:
+        {comment_content}
+
+        Please log in to your support portal to view and respond.
+
+        Best regards,
+        Cyber Security Operations Team
+        """
+
+        thread = threading.Thread(
+            target=send_async_email,
+            args=(current_app._get_current_object(), msg)
+        )
+        thread.start()
+
+        return True
+
+    except Exception as e:
+        print(f"Failed to send comment notification email: {e}")
+        return False
 
 # Import datetime at the top of the file
 from datetime import datetime

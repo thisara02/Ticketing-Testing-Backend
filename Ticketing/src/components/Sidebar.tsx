@@ -3,15 +3,15 @@ import { FaTachometerAlt, FaHistory } from "react-icons/fa";
 import { FaTicket } from "react-icons/fa6";
 import { useNavigate, NavLink } from "react-router-dom";
 import Swal from "sweetalert2";
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 interface SidebarProps {
   isOpen: boolean;
 }
 
-// Define the shape of your decoded JWT payload
 interface DecodedToken {
   name: string;
+  company: string;
   email: string;
   exp: number;
 }
@@ -19,8 +19,10 @@ interface DecodedToken {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const navigate = useNavigate();
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   let customerName = "Guest";
+  let customerCompany = "GuestCompany";
   let customerEmail = "guest@example.com";
 
   const token = localStorage.getItem("cusToken");
@@ -29,56 +31,63 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     try {
       const decoded = jwtDecode<DecodedToken>(token);
       customerName = decoded.name;
+      customerCompany = decoded.company;
       customerEmail = decoded.email;
     } catch (error) {
       console.error("Failed to decode JWT token:", error);
-      // Optional: clear invalid token
       localStorage.removeItem("cusToken");
     }
   }
 
   useEffect(() => {
-        const token = localStorage.getItem("cusToken");
-        if (!token) {
-          Swal.fire("Error", "Authentication token missing. Please login again.", "error");
-          return;
+    const token = localStorage.getItem("cusToken");
+    if (!token) {
+      Swal.fire("Error", "Authentication token missing. Please login again.", "error");
+      return;
+    }
+
+    const baseUrl = "http://localhost:5000";
+
+    fetch(`${baseUrl}/api/customers/profile`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => null);
+          throw new Error(errorData?.error || "Failed to fetch profile");
         }
-  
-        const baseUrl = "http://localhost:5000";
-  
-        fetch(`${baseUrl}/api/customers/profile`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        })
-          .then(async (res) => {
-            if (!res.ok) {
-              const errorData = await res.json().catch(() => null);
-              throw new Error(errorData?.error || "Failed to fetch profile");
-            }
-            return res.json();
-          })
-          .then((data) => {
-  
-            if (data.profile_image) {
-              // Use the full URL returned from backend
-              const imageUrl = data.profile_image.startsWith('http') 
-                ? data.profile_image 
-                : `${baseUrl}${data.profile_image}`;
-              setProfileImagePreview(imageUrl + `?t=${Date.now()}`);
-            } else {
-              setProfileImagePreview(null);
-            }
-          })
-          .catch((err) => {
-            console.error(err);
-            Swal.fire("Error", err.message || "Failed to load profile data", "error");
-          });
-      }, []);
+        return res.json();
+      })
+      .then((data) => {
+        if (data.profile_image) {
+          const imageUrl = data.profile_image.startsWith("http")
+            ? data.profile_image
+            : `${baseUrl}${data.profile_image}`;
 
-
+          const img = new Image();
+          img.onload = () => {
+            setProfileImagePreview(`${imageUrl}?t=${Date.now()}`);
+            setImageLoaded(true);
+          };
+          img.onerror = () => {
+            setProfileImagePreview(null);
+            setImageLoaded(false);
+          };
+          img.src = imageUrl;
+        } else {
+          setProfileImagePreview(null);
+          setImageLoaded(false);
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        Swal.fire("Error", err.message || "Failed to load profile data", "error");
+      });
+  }, []);
 
   const handleLogout = () => {
     Swal.fire({
@@ -109,24 +118,30 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         isOpen ? "w-60" : "w-0 md:w-70"
       } overflow-hidden`}
     >
-      <div className="h-full flex flex-col p-2">
+      <div className="h-full flex flex-col p-2 pt-10">
         {/* User Profile */}
-        <div className="flex items-center space-x-4 mb-6 pb-4 border-b pt-10 justify-center">
+        <div className="flex items-center space-x-4 mb-6 pb-4 pt-4 justify-center border-b border-black">
           <div>
-            {profileImagePreview ? (
-                  <img
-                    src={profileImagePreview}
-                    alt="Profile"
-                    className="w-16 h-16 rounded-full object-cover border border-gray-300 mx-auto cursor-pointer mb-2"
-                    onClick={() => navigate("/profile")}
-                  />
-                ) : (
-                  <div onClick={() => navigate("/profile")} className="w-16 h-16 rounded-full border-4 border-gray-300 bg-gray-200 flex items-center justify-center text-gray-500 object-cover mx-auto cursor-pointer text-center">
-                    USER
-                  </div>
-                )}
+            {profileImagePreview && imageLoaded ? (
+              <img
+                src={profileImagePreview}
+                alt="Profile"
+                className="w-16 h-16 rounded-full object-cover border border-gray-300 mx-auto cursor-pointer mb-2"
+                onClick={() => navigate("/profile")}
+              />
+            ) : (
+              <div
+                onClick={() => navigate("/profile")}
+                className="w-16 h-16 rounded-full border-4 border-gray-300 bg-gray-200 flex items-center justify-center text-gray-500 object-cover mx-auto cursor-pointer text-center"
+              >
+                USER
+              </div>
+            )}
             <p className="font-semibold text-[#000000] text-base font-jura text-center">
               {customerName}
+            </p>
+            <p className="text-[#000000] text-sm font-jura text-center">
+              {customerCompany}
             </p>
             <p className="text-[#000000] text-sm font-jura text-center">
               {customerEmail}

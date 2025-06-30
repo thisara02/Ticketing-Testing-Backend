@@ -13,6 +13,7 @@ from flask_jwt_extended import get_jwt
 from app.utils.email_utils import send_assignment_notification_email
 from pytz import timezone
 from werkzeug.utils import secure_filename
+from app.models import Engineer
 
 ticket_bp = Blueprint("ticket", __name__, url_prefix="/api/ticket")
 
@@ -107,6 +108,10 @@ def create_service_request():
             print(f"Confirmation email sent to {user_email}")
         except Exception as e:
             print(f"Failed to send confirmation email: {str(e)}")
+            
+        
+        engineers = Engineer.query.with_entities(Engineer.email).all()
+        email_list = [eng.email for eng in engineers if eng.email]
 
         try:
             notify_new_pending_sr_to_engineer(
@@ -115,7 +120,8 @@ def create_service_request():
                 priority=data.get('priority'),
                 description=data.get('description'),
                 requester_name=user_name,
-                requester_company=user_company
+                requester_company=user_company,
+                recipient_emails=email_list
             )
             print("Engineer notified about new pending ticket.")
         except Exception as e:

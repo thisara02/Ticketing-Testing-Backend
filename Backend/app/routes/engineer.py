@@ -18,6 +18,7 @@ from app.models import OTPModel
 from app.utils.email_utils import send_otp_email
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from flask import send_from_directory
+from app.utils.email_utils import send_comment_notification_to_requester
 
 
 engineer_bp = Blueprint('engineer', __name__, url_prefix='/api/engineer')
@@ -428,36 +429,46 @@ def eng_add_onticket_comment(ticket_id):
     except jwt.InvalidTokenError:
         return jsonify({"error": "Invalid token"}), 401
 
-    engineer_name = decoded.get("name", "Engineer")  # Get customer name from token
+    engineer_name = decoded.get("name", "Engineer")
 
-    # Verify ticket exists and belongs to this company
-    ticket = Ticket.query.filter(
-        Ticket.id == ticket_id,
-    ).first()
-
+    ticket = Ticket.query.filter(Ticket.id == ticket_id).first()
     if not ticket:
         return jsonify({"error": "Ticket not found or access denied"}), 404
 
     data = request.get_json()
     content = data.get('content', '').strip()
-    
+
     if not content:
         return jsonify({"error": "Comment content is required"}), 400
 
     try:
-        # Create new comment
         comment = Comment(
             ticket_id=ticket_id,
             author_name=engineer_name,
             author_role='Engineer',
             message=content,
-            timestamp=datetime.now(pytz.timezone('Asia/Colombo')) 
+            timestamp=datetime.now(pytz.timezone('Asia/Colombo'))
         )
-        
+
         db.session.add(comment)
         db.session.commit()
 
-        # Return the created comment
+        # 🔔 Send email to requester
+        # ✅ Print ticket requester email fields before sending
+        print("DEBUG: Sending email to requester")
+        print(" - Email:", ticket.requester_email)
+        print(" - Name:", ticket.requester_name)
+        print(" - Ticket ID:", ticket.id)
+        print(" - Subject:", ticket.subject)
+        email_sent = send_comment_notification_to_requester(
+            requester_email=ticket.requester_email,
+            requester_name=ticket.requester_name,
+            ticket_id=ticket.id,
+            subject=ticket.subject,
+            comment_content=content
+        )
+        print("DEBUG: Email sent status:", email_sent)
+
         new_comment = {
             "id": comment.id,
             "author": comment.author_name,
@@ -467,11 +478,13 @@ def eng_add_onticket_comment(ticket_id):
         }
 
         return jsonify(new_comment), 201
-        
+
     except Exception as e:
         db.session.rollback()
-        print(f"Error creating comment: {e}")  # Add this line
+        print(f"Error creating comment: {e}")
         return jsonify({"error": "Failed to create comment"}), 500
+
+
     
     
 @engineer_bp.route('/closetickets/<int:ticket_id>', methods=['GET'])
