@@ -16,6 +16,7 @@ from werkzeug.utils import secure_filename
 from app.models import Engineer
 from sqlalchemy import func
 from app.models import CompanySupport, SupportType
+from app.utils.email_utils import send_ticket_closed_email 
 
 ticket_bp = Blueprint("ticket", __name__, url_prefix="/api/ticket")
 
@@ -514,7 +515,9 @@ def close_ticket(ticket_id):
         except jwt.InvalidTokenError:
             return jsonify({"error": "Invalid token"}), 401
 
-        # Get and validate form data
+        engineer_name = decoded.get("name")  # ✅ Engineer closing the ticket
+
+        # Get and validate request data
         data = request.get_json()
         rectification_date_str = data.get("rectification_date")
         work_done_comment = data.get("work_done_comment", "").strip()
@@ -532,19 +535,45 @@ def close_ticket(ticket_id):
         if not ticket:
             return jsonify({"error": "Ticket not found"}), 404
 
-        # Update fields
+        # Update ticket fields
         ticket.rectification_date = rectification_date
         ticket.work_done_comment = work_done_comment
-        ticket.status = "Closed"  # ✅ Set status to Closed
+        ticket.status = "Closed"
         ticket.closed_at = datetime.now(timezone("Asia/Colombo"))
 
         db.session.commit()
 
-        return jsonify({"message": "Ticket closed successfully"}), 200
+        # ✅ Send email using data already in the ticket
+        try:
+            print("Sending closed ticket email with values:")
+            print("To:", ticket.requester_email)
+            print("Name:", ticket.requester_name)
+            print("Ticket ID:", ticket.id)
+            print("Subject:", ticket.subject)
+            print("Engineer:", engineer_name)
+            print("Rectified on:", rectification_date)
+            print("Work done comment:", work_done_comment)
+
+            send_ticket_closed_email(
+                to_email=ticket.requester_email,
+                customer_name=ticket.requester_name,
+                ticket_id=ticket.id,
+                subject=ticket.subject,
+                closed_by=engineer_name,
+                rectification_date=rectification_date,
+                work_done_comment=work_done_comment
+            )
+
+            print(f"Closure email sent to {ticket.requester_email}")
+        except Exception as e:
+            print(f"Failed to send closure email: {str(e)}")
+
+        return jsonify({"message": "Ticket closed and email sent"}), 200
 
     except Exception as e:
         print(f"Error closing ticket: {e}")
         return jsonify({"error": "Internal server error"}), 500
+
 
 
 @ticket_bp.route('/history/all', methods=['GET'])

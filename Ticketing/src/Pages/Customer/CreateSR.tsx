@@ -47,6 +47,8 @@ const CreateSR = () => {
                 icon: "error",
                 title: "Session expired",
                 text: "Please login again.",
+                timer: 1500,
+                showConfirmButton: false,
               });
               navigate("/login");
             }
@@ -74,6 +76,8 @@ const CreateSR = () => {
       icon: "warning",
       title: "All fields are required!",
       text: "Please complete all fields before submitting.",
+      timer: 1500,
+      showConfirmButton: false,
     });
     return;
   }
@@ -111,6 +115,8 @@ const CreateSR = () => {
       title: "Error",
       text: error.response?.data?.error || "Something went wrong.",
       icon: "error",
+      timer: 2000,
+      showConfirmButton: false,
     });
   }
 };

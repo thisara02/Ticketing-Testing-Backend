@@ -762,5 +762,118 @@ def notify_engineer_about_customer_comment(engineer_email, ticket_id, subject, c
         print(f"Failed to send engineer comment notification: {e}")
         return False
 
+
+def send_ticket_closed_email(to_email, customer_name, ticket_id, subject, closed_by, rectification_date, work_done_comment):
+    """Notify customer that their ticket has been successfully closed"""
+    try:
+        msg = Message(
+            subject=f"Your Ticket #{ticket_id:06d} Has Been Closed",
+            recipients=[to_email],
+            sender=current_app.config['MAIL_DEFAULT_SENDER']
+        )
+
+        # HTML version
+        msg.html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    background-color: #f9fafb;
+                    padding: 20px;
+                }}
+                .container {{
+                    background-color: #ffffff;
+                    max-width: 600px;
+                    margin: auto;
+                    padding: 25px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+                }}
+                .header {{
+                    background-color: #059669;
+                    color: white;
+                    padding: 15px;
+                    text-align: center;
+                    border-radius: 6px 6px 0 0;
+                }}
+                .details {{
+                    margin-top: 20px;
+                    padding: 15px;
+                    background-color: #f1f5f9;
+                    border-radius: 5px;
+                }}
+                .footer {{
+                    font-size: 12px;
+                    color: #6b7280;
+                    text-align: center;
+                    margin-top: 30px;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>Ticket #{ticket_id:06d} Closed</h2>
+                </div>
+                <p>Dear {customer_name},</p>
+                <p>Your support ticket has been successfully resolved and marked as <strong>Closed</strong>.</p>
+                
+                <div class="details">
+                    <p><strong>Ticket ID:</strong> {ticket_id:06d}</p>
+                    <p><strong>Subject:</strong> {subject}</p>
+                    <p><strong>Closed By:</strong> {closed_by}</p>
+                    <p><strong>Rectification Date:</strong> {rectification_date.strftime('%Y-%m-%d %H:%M:%S')}</p>
+                    <p><strong>Work Done:</strong><br>{work_done_comment}</p>
+                </div>
+
+                <p>Thank you for bringing this to our attention. If you have any further issues, feel free to open a new ticket.</p>
+                <p>Best regards,<br><strong>Cyber Security Operations Team</strong></p>
+
+                <div class="footer">
+                    This is an automated message. Please do not reply to this email.
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        # Plain text version
+        msg.body = f"""
+        Dear {customer_name},
+
+        Your support ticket #{ticket_id:06d} has been successfully closed.
+
+        Ticket Details:
+        - Ticket ID: {ticket_id:06d}
+        - Subject: {subject}
+        - Closed By: {closed_by}
+        - Rectification Date: {rectification_date.strftime('%Y-%m-%d %H:%M:%S')}
+        - Work Done: {work_done_comment}
+
+        Thank you for bringing this issue to our attention. If you have any more concerns, please open a new ticket.
+
+        Best regards,
+        Cyber Security Operations Team
+
+        ---
+        This is an automated message. Please do not reply.
+        """
+
+        # Send asynchronously
+        thread = threading.Thread(
+            target=send_async_email,
+            args=(current_app._get_current_object(), msg)
+        )
+        thread.start()
+
+        return True
+
+    except Exception as e:
+        print(f"Failed to send ticket closed email: {e}")
+        return False
+
+
 # Import datetime at the top of the file
 from datetime import datetime
