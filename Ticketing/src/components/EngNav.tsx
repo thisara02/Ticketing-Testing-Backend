@@ -30,7 +30,7 @@ const EngNav: React.FC<NavbarProps> = ({ toggleSidebar }) => {
       </div>
 
       {/* Right: Notifications */}
-      <div className="flex items-center pr-6 relative" ref={dropdownRef}>
+      {/* <div className="flex items-center pr-6 relative" ref={dropdownRef}>
         <NavLink
           to="/eng-notifi"
           className={({ isActive }) =>
@@ -41,7 +41,7 @@ const EngNav: React.FC<NavbarProps> = ({ toggleSidebar }) => {
           <FaBell />
           <span className="absolute left-0 -bottom-1 h-0.5 bg-green-500 transition-all duration-300 w-0 group-hover:w-full"></span>
         </NavLink>
-      </div>
+      </div> */}
     </header>
   );
 };

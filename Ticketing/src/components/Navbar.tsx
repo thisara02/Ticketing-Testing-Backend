@@ -78,7 +78,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
         </NavLink> */}
 
         {/* Notifications Link */}
-        <NavLink
+        {/* <NavLink
           to="/notifications"
           className={({ isActive }) =>
             `relative text-[#000000] hover:text-red-600 group text-xl p-2 transition
@@ -87,7 +87,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
         >
           <FaBell />
           <span className="absolute left-0 -bottom-1 h-0.5 bg-red-500 transition-all duration-300 w-0 group-hover:w-full"></span>
-        </NavLink>
+        </NavLink> */}
 
         {/* Dropdown Create SR Button */}
         <div className="relative">
