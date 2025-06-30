@@ -17,6 +17,7 @@ from app.utils.email_utils import send_otp_email
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from app.models import OTPModel
 from app.utils.email_utils import notify_engineer_about_customer_comment
+from app.models import CompanySupport, SupportType
 
 customer_bp = Blueprint("customer", __name__, url_prefix="/api/customers")  # Adjust prefix to match frontend
 
@@ -333,35 +334,46 @@ def get_customer_tickets():
     })
 
 
-@customer_bp.route('/ticket-counts', methods=['GET'])
+@customer_bp.route("/ticket-counts", methods=["GET"])
 def get_ticket_counts():
-    auth_header = request.headers.get("Authorization", None)
-    if not auth_header:
-        return jsonify({"error": "Authorization header missing"}), 401
-
-    parts = auth_header.split()
-    if len(parts) != 2 or parts[0].lower() != "bearer":
-        return jsonify({"error": "Invalid Authorization header format"}), 401
-
-    token = parts[1]
     try:
-        secret = current_app.config['SECRET_KEY']
-        decoded = jwt.decode(token, secret, algorithms=["HS256"])
-    except jwt.ExpiredSignatureError:
-        return jsonify({"error": "Token expired"}), 401
-    except jwt.InvalidTokenError:
-        return jsonify({"error": "Invalid token"}), 401
-    
+        # Decode JWT
+        token = request.headers.get("Authorization", None)
+        if not token:
+            return jsonify({"error": "Authorization header missing"}), 401
+        token = token.split()[1]
+        decoded = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
+        user_company = decoded.get("company")
 
-    company = decoded.get("company")
+        # Monthly time window
+        first_day = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-    pending_count = Ticket.query.filter_by(requester_company=company, status="Pending").count()
-    ongoing_count = Ticket.query.filter_by(requester_company=company, status="Ongoing").count()
+        # Counts
+        pending = Ticket.query.filter_by(requester_company=user_company, status="Pending").count()
+        ongoing = Ticket.query.filter_by(requester_company=user_company, status="Ongoing").count()
 
-    return jsonify({
-        "pending": pending_count,
-        "ongoing": ongoing_count
-    })
+        used_service_requests = Ticket.query.filter(
+            Ticket.requester_company == user_company,
+            Ticket.created_at >= first_day,
+            Ticket.type == "Service Request"
+        ).count()
+
+        company_support = CompanySupport.query.filter_by(company=user_company).first()
+        support_type = SupportType.query.filter_by(name=company_support.support_type).first()
+        limit = support_type.ticket_limit
+
+        balance_service_requests = max(0, limit - used_service_requests)
+
+        return jsonify({
+            "pending": pending,
+            "ongoing": ongoing,
+            "used_service_requests": used_service_requests,
+            "balance_service_requests": balance_service_requests
+        })
+    except Exception as e:
+        print("Ticket count error:", str(e))
+        return jsonify({"error": str(e)}), 500
+
 
 
 @customer_bp.route('/tickets/<int:ticket_id>', methods=['GET'])

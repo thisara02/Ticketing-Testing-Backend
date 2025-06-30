@@ -36,7 +36,12 @@ const Home = () => {
     ongoing: { service: [], faulty: [] },
   });
 
-  const [ticketCounts, setTicketCounts] = useState({ pending: 0, ongoing: 0 });
+  const [ticketCounts, setTicketCounts] = useState({
+    pending: 0,
+    ongoing: 0,
+    used_service_requests: 0,
+    balance_service_requests: 0,
+  });
 
   const toggleSidebar = () => {
     setSidebarOpen(!isSidebarOpen);
@@ -95,14 +100,12 @@ const Home = () => {
       }
     };
 
-    fetchTickets();
-    fetchTicketCounts();
-    
-    function combinedFetch() {
+    const combinedFetch = () => {
       fetchTickets();
       fetchTicketCounts();
-    }
+    };
 
+    combinedFetch();
     const interval = setInterval(combinedFetch, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -152,11 +155,11 @@ const Home = () => {
               },
               {
                 label: "Balance Service Request Count (This Month)",
-                count: 5,
+                count: ticketCounts.balance_service_requests,
               },
               {
                 label: "Used Service Request Count (This Month)",
-                count: 14,
+                count: ticketCounts.used_service_requests,
               },
             ].map((item, index) => (
               <div key={index} className="bg-white rounded-xl shadow-md p-10">
