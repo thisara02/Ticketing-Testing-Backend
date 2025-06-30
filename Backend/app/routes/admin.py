@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify, current_app
+import os
+from flask import Blueprint, request, jsonify, current_app, send_from_directory
 from app import db
 from app.models import Admin
 from app.models import CompanySupport
@@ -323,3 +324,180 @@ def get_all_companies():
         "support_type": c.support_type,
     } for c in companies]
     return jsonify(result), 200
+
+
+def get_user_id_from_token():
+    auth_header = request.headers.get("Authorization", None)
+    if not auth_header:
+        return None, jsonify({"error": "Authorization header missing"}), 401
+
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return None, jsonify({"error": "Invalid Authorization header format"}), 401
+
+    token = parts[1]
+    try:
+        decoded = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
+        print("Decoded JWT payload:", decoded)
+        user_id = decoded.get("id")
+        print("Engineer ID from token:", user_id)
+        return user_id, None, None
+    except jwt.ExpiredSignatureError:
+        return None, jsonify({"error": "Token expired"}), 401
+    except jwt.InvalidTokenError:
+        return None, jsonify({"error": "Invalid token"}), 401
+
+@admin_bp.route('/profile', methods=['PUT'])
+def admin_update_profile():
+    admin_id, error_response, status = get_user_id_from_token()
+    if error_response:
+        return error_response, status
+
+    admin = Admin.query.get(admin_id)
+    if not admin:
+        return jsonify({"error": "Admin not found"}), 404
+
+    try:
+        data = request.form
+        name = data.get("name")
+        mobile = data.get("mobilep")
+        if not name or not mobile:
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # Update basic profile fields
+        admin.name = name
+        admin.mobile = mobile
+
+        # Handle profile image upload
+        if 'profile_image' in request.files:
+            file = request.files['profile_image']
+            
+            # Check if file is actually selected
+            if file and file.filename != '':
+                # Validate file type
+                allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
+                if not ('.' in file.filename and 
+                        file.filename.rsplit('.', 1)[1].lower() in allowed_extensions):
+                    return jsonify({"error": "Invalid file type. Only PNG, JPG, JPEG, and GIF are allowed"}), 400
+                
+                # Create uploads directory if it doesn't exist
+                upload_folder = os.path.join(current_app.root_path, 'uploads', 'profile_images')
+                os.makedirs(upload_folder, exist_ok=True)
+                
+                # Generate unique filename to avoid conflicts
+                import uuid
+                file_extension = file.filename.rsplit('.', 1)[1].lower()
+                unique_filename = f"{admin.id}_{uuid.uuid4().hex[:8]}.{file_extension}"
+                
+                # Remove old profile image if exists
+                if admin.profile_image:
+                    old_file_path = os.path.join(upload_folder, admin.profile_image)
+                    if os.path.exists(old_file_path):
+                        try:
+                            os.remove(old_file_path)
+                        except OSError:
+                            pass  # Continue even if old file deletion fails
+                
+                # Save new file
+                file_path = os.path.join(upload_folder, unique_filename)
+                file.save(file_path)
+                
+                # Update database with filename
+                admin.profile_image = unique_filename
+
+        db.session.commit()
+        
+        # Return updated profile data
+        profile_image_url = None
+        if admin.profile_image:
+            profile_image_url = f"/api/admin/profile-image/{admin.profile_image}"
+        
+        return jsonify({
+            "message": "Profile updated successfully",
+            "profile": {
+                "id": admin.id,
+                "name": admin.name,
+                "email": admin.email,
+                "mobile": admin.mobile,
+                "profile_image": profile_image_url
+            }
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error updating profile: {e}")
+        return jsonify({"error": "Failed to update profile"}), 500
+
+
+@admin_bp.route('/profile-image/<filename>', methods=['GET'])
+def get_admin_profile_image(filename):
+    """Serve profile images"""
+    try:
+        upload_folder = os.path.join(current_app.root_path, 'uploads', 'profile_images')
+        return send_from_directory(upload_folder, filename)
+    except Exception as e:
+        print(f"Error serving profile image: {e}")
+        return jsonify({"error": "Image not found"}), 404
+
+
+# Update the get_profile route as well
+@admin_bp.route('/profile', methods=['GET'])
+def get_add_admin_profile():
+    admin_id, error_response, status = get_user_id_from_token()
+    print("Admin ID from token:", admin_id)
+
+    if error_response:
+        print("Error in token:", error_response)
+        return error_response, status
+
+    admin = Admin.query.get(admin_id)
+    print("Engineer query result:", admin)
+    if not admin:
+        return jsonify({"error": "Admin not found"}), 404
+
+    # Generate full URL for profile image
+    profile_image_url = None
+    if admin.profile_image:
+        profile_image_url = f"/api/admin/profile-image/{admin.profile_image}"
+
+    return jsonify({
+        "id": admin.id,
+        "name": admin.name,
+        "email": admin.email,
+        "mobile": admin.mobile,
+        "profile_image": profile_image_url
+    })
+
+
+@admin_bp.route('/change-password', methods=['POST'])
+def admin_change_password():
+    admin_id, error_response, status = get_user_id_from_token()
+    if error_response:
+        return error_response, status
+
+    admin = Admin.query.get(admin_id)
+    if not admin:
+        return jsonify({"error": "Admin not found"}), 404
+
+    data = request.get_json()
+    old_password = data.get("oldPassword")
+    new_password = data.get("newPassword")
+
+    if not old_password or not new_password:
+        return jsonify({"error": "Missing passwords"}), 400
+
+    if not admin.check_password(old_password):
+        return jsonify({"error": "Old password is incorrect"}), 401
+
+    import re
+    if (len(new_password) < 8 or
+        not re.search(r'[A-Z]', new_password) or
+        not re.search(r'[a-z]', new_password) or
+        not re.search(r'[0-9]', new_password) or
+        not re.search(r'[!@#$%^&*]', new_password)):
+        return jsonify({"error": "New password does not meet complexity requirements"}), 400
+
+    admin.set_password(new_password)
+    db.session.commit()
+
+    return jsonify({"message": "Password changed successfully"})

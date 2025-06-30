@@ -6,7 +6,6 @@ import {
   EyeSlashIcon,
   UserIcon,
   BriefcaseIcon,
-  BuildingOfficeIcon,
   DevicePhoneMobileIcon,
   EnvelopeIcon,
   KeyIcon,

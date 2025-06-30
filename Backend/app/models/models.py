@@ -74,6 +74,7 @@ class Admin(db.Model):
     password = db.Column(db.String(128), nullable=False)
     otp = db.Column(db.String(6))
     otp_expiry = db.Column(db.DateTime)
+    profile_image = db.Column(db.String(255), nullable=True) 
 
 
     def set_password(self, password):
