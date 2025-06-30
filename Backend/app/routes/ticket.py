@@ -71,7 +71,8 @@ def create_service_request():
         first_day_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         monthly_ticket_count = db.session.query(func.count()).filter(
             Ticket.requester_company == user_company,
-            Ticket.created_at >= first_day_of_month
+            Ticket.created_at >= first_day_of_month,
+            Ticket.type == "Service Request"
         ).scalar()
         
         print("==== Quota Check Debug ====")
