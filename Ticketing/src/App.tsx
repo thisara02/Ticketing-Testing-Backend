@@ -23,6 +23,7 @@ import ResetPass from "./Pages/Customer/ResetPassword"
 import AdminDash from "./Pages/Admin/AdminDashboard"
 import EngLogin from "./Pages/Engineer/EngLogin"
 import AdminCreateCus from "./Pages/Admin/AdminCreateCus"
+import AdminCreateCompany from "./Pages/Admin/AdminCreateCompany"
 import AdminCreateEng from "./Pages/Admin/AdminCreateEng"
 import AdminCreateAdmin from "./Pages/Admin/AdminCreateAdmin"
 import AdminNotification from "./Pages/Admin/AdminNotifications"
@@ -78,6 +79,7 @@ const App: React.FC = () => {
       <Route path="/admin-login" element={<AdminLogin />} />
       <Route path="/admin-dash" element={<AdminDash />} />
       <Route path="/create-cus" element={<AdminCreateCus />} />
+      <Route path="/create-company" element={<AdminCreateCompany />} />
       <Route path="/create-eng" element={<AdminCreateEng />} />
       <Route path="/create-admin" element={<AdminCreateAdmin />} />
       <Route path="/admin-notifi" element={<AdminNotification />} />

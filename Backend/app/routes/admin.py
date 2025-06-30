@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from app import db
 from app.models import Admin
+from app.models import CompanySupport
 import jwt
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash
@@ -273,3 +274,52 @@ def reset_password():
     except Exception as e:
         print(f"Error in reset_password: {e}")
         return jsonify({"error": "Internal server error"}), 500
+    
+    
+@admin_bp.route('/company-register', methods=['POST'])
+def register_company():
+    try:
+        data = request.get_json()
+
+        required_fields = ['company', 'location', 'contact_person', 'contact_mobile', 'account_manager', 'support_type']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({"error": f"{field} is required"}), 400
+
+        # Check if company already exists
+        existing = CompanySupport.query.filter_by(company=data['company']).first()
+        if existing:
+            return jsonify({"error": "Company already exists"}), 409
+
+        # Create new company entry
+        company = CompanySupport(
+            company=data['company'],
+            location=data['location'],
+            contact_person=data['contact_person'],
+            contact_mobile=data['contact_mobile'],
+            account_manager=data['account_manager'],
+            support_type=data['support_type']
+        )
+        db.session.add(company)
+        db.session.commit()
+
+        return jsonify({"message": "Company registered successfully"}), 201
+
+    except Exception as e:
+        print("Error registering company:", str(e))
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@admin_bp.route('/companies', methods=['GET'])
+def get_all_companies():
+    companies = CompanySupport.query.all()
+    result = [{
+        "id": c.id,
+        "company": c.company,
+        "location": c.location,
+        "contact_person": c.contact_person,
+        "contact_mobile": c.contact_mobile,
+        "account_manager": c.account_manager,
+        "support_type": c.support_type,
+    } for c in companies]
+    return jsonify(result), 200

@@ -792,7 +792,7 @@ def send_ticket_closed_email(to_email, customer_name, ticket_id, subject, closed
                     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
                 }}
                 .header {{
-                    background-color: #059669;
+                    background-color: #960532;
                     color: white;
                     padding: 15px;
                     text-align: center;
@@ -825,7 +825,7 @@ def send_ticket_closed_email(to_email, customer_name, ticket_id, subject, closed
                     <p><strong>Subject:</strong> {subject}</p>
                     <p><strong>Closed By:</strong> {closed_by}</p>
                     <p><strong>Rectification Date:</strong> {rectification_date.strftime('%Y-%m-%d %H:%M:%S')}</p>
-                    <p><strong>Work Done:</strong><br>{work_done_comment}</p>
+                    <p><strong>Work Done Comment by Engineer:</strong><br>{work_done_comment}</p>
                 </div>
 
                 <p>Thank you for bringing this to our attention. If you have any further issues, feel free to open a new ticket.</p>
@@ -850,7 +850,7 @@ def send_ticket_closed_email(to_email, customer_name, ticket_id, subject, closed
         - Subject: {subject}
         - Closed By: {closed_by}
         - Rectification Date: {rectification_date.strftime('%Y-%m-%d %H:%M:%S')}
-        - Work Done: {work_done_comment}
+        - Work Done Comment by Engineer: {work_done_comment}
 
         Thank you for bringing this issue to our attention. If you have any more concerns, please open a new ticket.
 

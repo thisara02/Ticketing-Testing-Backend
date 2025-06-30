@@ -117,8 +117,8 @@ class SupportType(db.Model):
     __tablename__ = 'support_type'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), unique=True, nullable=False)  # e.g., Gold
-    ticket_limit = db.Column(db.Integer, nullable=False)  # e.g., 20
+    name = db.Column(db.String(50), unique=True, nullable=False) 
+    ticket_limit = db.Column(db.Integer, nullable=False)
 
 
 class CompanySupport(db.Model):
@@ -127,3 +127,7 @@ class CompanySupport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     company = db.Column(db.String(120), unique=True, nullable=False)  # Company name (same as used in Customer)
     support_type = db.Column(db.String(50), nullable=False)  # Must match a SupportType.name
+    location = db.Column(db.String(200), nullable=True)
+    contact_person = db.Column(db.String(100), nullable=True)
+    contact_mobile = db.Column(db.String(20), nullable=True)
+    account_manager = db.Column(db.String(100), nullable=True)
