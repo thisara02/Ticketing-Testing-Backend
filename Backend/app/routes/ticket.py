@@ -14,6 +14,8 @@ from app.utils.email_utils import send_assignment_notification_email
 from pytz import timezone
 from werkzeug.utils import secure_filename
 from app.models import Engineer
+from sqlalchemy import func
+from app.models import CompanySupport, SupportType
 
 ticket_bp = Blueprint("ticket", __name__, url_prefix="/api/ticket")
 
@@ -56,6 +58,33 @@ def create_service_request():
         if not data.get('subject') or not data.get('description') or not data.get('priority'):
             return jsonify({'error': 'Missing required fields'}), 400
 
+        company_support = CompanySupport.query.filter_by(company=user_company).first()
+        if not company_support:
+            return jsonify({'error': 'Support type for this company is not configured.'}), 400
+
+        support_type = SupportType.query.filter_by(name=company_support.support_type).first()
+        if not support_type:
+            return jsonify({'error': 'Invalid support type configured for company.'}), 400
+
+        ticket_limit = support_type.ticket_limit
+
+        first_day_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        monthly_ticket_count = db.session.query(func.count()).filter(
+            Ticket.requester_company == user_company,
+            Ticket.created_at >= first_day_of_month
+        ).scalar()
+        
+        print("==== Quota Check Debug ====")
+        print(f"Company: {user_company}")
+        print(f"Support Type: {company_support.support_type}")
+        print(f"Ticket Limit: {ticket_limit}")
+        print(f"Used This Month: {monthly_ticket_count}")
+        print("===========================")
+
+        if monthly_ticket_count >= ticket_limit:
+            return jsonify({
+                'error': f"Your Monthly Service Ticket Quota has been exceeded.Ticket creation limit reached ({ticket_limit} tickets per month for {company_support.support_type} support). Contact Administrator."
+            }), 403
         # Create ticket object
         ticket = Ticket(
             subject=data.get('subject'),
