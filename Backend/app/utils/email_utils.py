@@ -719,11 +719,11 @@ def notify_engineer_about_customer_comment(engineer_email, ticket_id, subject, c
         <body>
             <div class="container">
                 <div class="header">
-                    <h2>New Comment from Customer</h2>
+                    <h2>New Comment on #{ticket_id:06d}</h2>
                 </div>
                 <div class="content">
                     <p><strong>Customer:</strong> {customer_name}</p>
-                    <p><strong>Ticket ID:</strong> SR-{ticket_id:06d}</p>
+                    <p><strong>Ticket ID:</strong>#{ticket_id:06d}</p>
                     <p><strong>Subject:</strong> {subject}</p>
                     <p><strong>Comment:</strong></p>
                     <div class="comment-box">
@@ -740,9 +740,9 @@ def notify_engineer_about_customer_comment(engineer_email, ticket_id, subject, c
         """
 
         msg.body = f"""
-        New Comment from Customer
+        New Comment on #{ticket_id:06d}
         Customer: {customer_name}
-        Ticket ID: SR-{ticket_id:06d}
+        Ticket ID:#{ticket_id:06d}
         Subject: {subject}
 
         Comment:

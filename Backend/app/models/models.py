@@ -111,3 +111,19 @@ class LoginAttempt(db.Model):
     failed_attempts = db.Column(db.Integer, default=0, nullable=False)
     last_attempt = db.Column(db.DateTime, nullable=True)
     locked_until = db.Column(db.DateTime, nullable=True) 
+    
+    
+class SupportType(db.Model):
+    __tablename__ = 'support_type'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)  # e.g., Gold
+    ticket_limit = db.Column(db.Integer, nullable=False)  # e.g., 20
+
+
+class CompanySupport(db.Model):
+    __tablename__ = 'company_support'
+
+    id = db.Column(db.Integer, primary_key=True)
+    company = db.Column(db.String(120), unique=True, nullable=False)  # Company name (same as used in Customer)
+    support_type = db.Column(db.String(50), nullable=False)  # Must match a SupportType.name
