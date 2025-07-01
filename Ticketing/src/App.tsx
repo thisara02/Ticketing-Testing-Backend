@@ -88,9 +88,9 @@ const App: React.FC = () => {
       <Route path="/admin-history" element={<AdminHistory />} />
       <Route path="/admin-forgot" element={<AdminForgotPass />} />
       <Route path="/admin-reset" element={<AdminResetPass />} />
-      <Route path="/admin-view-closed" element={<AdminViewClosed />} />
-      <Route path="/admin-view-pending" element={<AdminViewPending />} />
-      <Route path="/admin-viewon" element={<AdminViewOngoing />} />
+      <Route path="/admin-view-closed/:ticketId" element={<AdminViewClosed />} />
+      <Route path="/admin-view-pending/:ticketId" element={<AdminViewPending />} />
+      <Route path="/admin-viewon/:ticketId" element={<AdminViewOngoing />} />
       <Route path="/admin-otp" element={<AdminOtp />} />
       
 

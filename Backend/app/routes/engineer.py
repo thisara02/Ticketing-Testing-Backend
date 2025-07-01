@@ -275,6 +275,7 @@ def get_engineer_ticket_details(ticket_id):
         "subject": ticket.subject,
         "type": ticket.type,
         "description": ticket.description,
+        "requester_company":ticket.requester_company,
         "requester_name": ticket.requester_name,
         "requester_email": ticket.requester_email,
         "requester_contact": ticket.requester_contact,

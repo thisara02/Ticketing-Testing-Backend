@@ -10,6 +10,7 @@ interface Ticket {
   subject: string;
   type: string;
   description: string;
+  requester_company:string;
   requester_name: string;
   requester_email: string;
   requester_contact: string;
@@ -230,7 +231,7 @@ const EngViewPending = () => {
           {/* Header */}
           <div className="bg-white p-6 rounded-lg shadow-md mb-6">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-              Ticket ID: <span className="text-teal-600">{ticket.id}</span>
+              Ticket ID: <span className="text-teal-600">{ticket.id}</span>- {ticket.requester_company}
             </h1>
           </div>
 
