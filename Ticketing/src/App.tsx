@@ -28,7 +28,6 @@ import AdminCreateEng from "./Pages/Admin/AdminCreateEng"
 import AdminCreateAdmin from "./Pages/Admin/AdminCreateAdmin"
 import AdminNotification from "./Pages/Admin/AdminNotifications"
 import AdminProfile from "./Pages/Admin/AdminProfile"
-import AdminViewCus from "./Pages/Admin/AdminViewCus"
 import AdminHistory from "./Pages/Admin/AdminHistory"
 import AdminForgotPass from "./Pages/Admin/AdminForgotPassword"
 import AdminResetPass from "./Pages/Admin/AdminResetPassword"
@@ -84,7 +83,6 @@ const App: React.FC = () => {
       <Route path="/create-admin" element={<AdminCreateAdmin />} />
       <Route path="/admin-notifi" element={<AdminNotification />} />
       <Route path="/admin-profile" element={<AdminProfile />} />
-      <Route path="/admin-viewcus" element={<AdminViewCus />} />
       <Route path="/admin-history" element={<AdminHistory />} />
       <Route path="/admin-forgot" element={<AdminForgotPass />} />
       <Route path="/admin-reset" element={<AdminResetPass />} />

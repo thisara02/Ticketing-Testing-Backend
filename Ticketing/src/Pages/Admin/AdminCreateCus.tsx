@@ -322,12 +322,22 @@ const AdminCreateCus = () => {
                         className="flex justify-between items-center p-4 border rounded bg-gray-50"
                       >
                         <div>
-                          <p className="font-medium text-black">{customer.name}</p>
-                          <p className="text-sm text-gray-600">{customer.email}</p>
-                          <p className="text-sm text-gray-600">
-                            {customer.designation}, {customer.mobile}
-                          </p>
-                          <p className="text-sm text-gray-600">{customer.address}</p>
+                          <div className="flex items-center space-x-2 text-black font-medium">
+                            <UserIcon className="h-5 w-5 text-gray-500" />
+                            <p>Name : {customer.name}</p>
+                          </div>
+                          <div className="flex items-center space-x-2 text-black font-medium">
+                            <EnvelopeIcon className="h-5 w-5 text-gray-500" />
+                            <p>Email : {customer.email}</p>
+                          </div>
+                          <div className="flex items-center space-x-2 text-black font-medium">
+                            <BriefcaseIcon className="h-5 w-5 text-gray-500" />
+                            <p>Designation : {customer.designation}</p>
+                          </div>
+                          <div className="flex items-center space-x-2 text-black font-medium">
+                            <DevicePhoneMobileIcon className="h-5 w-5 text-gray-500" />
+                            <p>Contact : {customer.mobile}</p>
+                          </div>
                         </div>
                         <button
                           onClick={() => handleDeleteCustomer(customer.id)}
