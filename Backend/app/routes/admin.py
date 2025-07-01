@@ -680,3 +680,61 @@ def get_admin_ticket_details(ticket_id):
         "ticket": ticket_data,
         "comments": comments_data
     })
+    
+    
+@admin_bp.route('/dashboard/tickets-summary', methods=['GET'])
+def admin_dashboard_summary():
+    try:
+        # Fetch all tickets
+        tickets = Ticket.query.all()
+
+        # Categorize tickets
+        pending_tickets = [t for t in tickets if t.status == "Pending"]
+        ongoing_tickets = [t for t in tickets if t.status == "Ongoing"]
+        closed_tickets = [
+            t for t in tickets
+            if t.status == "Closed" and t.closed_at and
+               t.closed_at.month == datetime.utcnow().month and
+               t.closed_at.year == datetime.utcnow().year
+        ]
+
+        # Engineer stats
+        engineer_stats = {}
+        for ticket in ongoing_tickets:
+            if ticket.engineer_name:
+                engineer_stats.setdefault(ticket.engineer_name, {"ongoing": 0, "closed": 0})
+                engineer_stats[ticket.engineer_name]["ongoing"] += 1
+        for ticket in closed_tickets:
+            if ticket.engineer_name:
+                engineer_stats.setdefault(ticket.engineer_name, {"ongoing": 0, "closed": 0})
+                engineer_stats[ticket.engineer_name]["closed"] += 1
+
+        return jsonify({
+            "pending": [
+                {
+                    "id": t.id,
+                    "subject": t.subject,
+                    "type": t.type,
+                    "requester_name": t.requester_name,
+                    "requester_company": t.requester_company,
+                    "description": t.description,
+                    "created_at": t.created_at.isoformat(),
+                } for t in pending_tickets
+            ],
+            "ongoing": [
+                {
+                    "id": t.id,
+                    "subject": t.subject,
+                    "type": t.type,
+                    "requester_name": t.requester_name,
+                    "requester_company": t.requester_company,
+                    "description": t.description,
+                    "engineer_name": t.engineer_name,
+                    "created_at": t.created_at.isoformat(),
+                } for t in ongoing_tickets
+            ],
+            "engineer_stats": engineer_stats
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

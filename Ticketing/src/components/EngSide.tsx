@@ -123,7 +123,7 @@ const EngSide: React.FC<SidebarProps> = ({ isOpen }) => {
                     onClick={() => navigate("/eng-profile")}
                   />
                 ) : (
-                  <div onClick={() => navigate("eng-profile")} className="w-16 h-16 rounded-full border-4 border-gray-300 bg-gray-200 flex items-center justify-center text-gray-500 object-cover mx-auto cursor-pointer text-center">
+                  <div onClick={() => navigate("/eng-profile")} className="w-16 h-16 rounded-full border-4 border-gray-300 bg-gray-200 flex items-center justify-center text-gray-500 object-cover mx-auto cursor-pointer text-center">
                     USER
                   </div>
                 )}
