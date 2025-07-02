@@ -1,7 +1,7 @@
 import { FaEnvelope, FaLock } from "react-icons/fa";
 import Logo from "../../assets/logo.png";
-import SecurityImage from "../../assets/security-image.webp";
-import BgImage from "../../assets/login-bg.jpg"; 
+import SecurityImage from "../../assets/security-image3.jpg";
+import BgImage from "../../assets/login-bg5.jpg"; 
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";// Update to your background image path
 import { useState } from "react";
