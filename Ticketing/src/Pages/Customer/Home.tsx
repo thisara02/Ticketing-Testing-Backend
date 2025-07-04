@@ -3,7 +3,8 @@ import Sidebar from "../../components/Sidebar";
 import Navbar from "../../components/Navbar";
 import BannerImage from "../../assets/about-banner-lcs.jpg";
 import { Link } from "react-router-dom";
-import { FaTicketAlt } from "react-icons/fa";
+import { FaExclamationTriangle, FaTicketAlt, FaTools } from "react-icons/fa";
+import { motion } from "framer-motion";
 
 interface Ticket {
   id: number;
@@ -26,6 +27,15 @@ interface TicketsData {
   ongoing: TicketsByType;
 }
 
+const fadeInUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: (i = 1) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.15, duration: 0.5, ease: "easeOut" }
+  })
+};
+
 const Home = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [pendingTab, setPendingTab] = useState<TicketType>("service");
@@ -45,6 +55,12 @@ const Home = () => {
 
   const toggleSidebar = () => {
     setSidebarOpen(!isSidebarOpen);
+  };
+
+  const getIcon = (type: string) => {
+    if (type === "Service Request") return <FaTools className="text-gray-600 w-4 h-4" />;
+    if (type === "Faulty Ticket") return <FaExclamationTriangle className="text-red-400 w-4 h-4" />;
+    return <FaTicketAlt className="text-gray-400 w-5 h-5" />;
   };
 
   useEffect(() => {
@@ -128,17 +144,22 @@ const Home = () => {
           <Navbar toggleSidebar={toggleSidebar} />
         </div>
 
-        <div className="flex-1 overflow-y-auto bg-[#F3F4F6]">
+        <div className="flex-1 overflow-y-auto bg-[#d4e6e1]">
           <div
             className="w-full h-80 bg-cover bg-center relative"
             style={{ backgroundImage: `url(${BannerImage})` }}
           >
             <div className="absolute inset-0 bg-black bg-opacity-50 flex pt-20 justify-left pl-8">
-              <h1 className="text-white text-4xl font-bold text-left font-jura">
-                Welcome to
-                <br />
-                Lankacom Cyber Security <br />Support Portal
-              </h1>
+              <motion.h1
+                className="text-white text-5xl font-bold font-jura leading-tight"
+                initial={{ opacity: 0, x: -50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.7 }}
+              >
+                Welcome to<br />
+                Lankacom Cyber Security<br />
+                Support Portal
+              </motion.h1>
             </div>
           </div>
 
@@ -162,12 +183,16 @@ const Home = () => {
                 count: ticketCounts.used_service_requests,
               },
             ].map((item, index) => (
-              <div key={index} className="bg-white rounded-xl shadow-md p-10">
-                <h2 className="text-xl font-semibold text-gray-800 mb-2 text-center">
-                  {item.label}
-                </h2>
-                <p className="text-gray-600 text-5xl text-center">{item.count}</p>
-              </div>
+              <motion.div
+                key={index}
+                variants={fadeInUp}
+                initial="hidden"
+                animate="visible"
+                className="bg-gray-200 p-8 rounded-xl shadow-lg hover:shadow-2xl cursor-default transition-shadow duration-300 text-center text-black"
+              >
+                <h2 className="text-lg font-semibold text-gray-600 mb-2">{item.label}</h2>
+                <p className="text-5xl font-bold text-gray-800">{item.count}</p>
+              </motion.div>
             ))}
           </div>
 
@@ -201,25 +226,30 @@ const Home = () => {
               </div>
 
               <div className="space-y-4">
-                {ticketsData.pending[pendingTab].map((ticket) => {
+                {ticketsData.pending[pendingTab].map((ticket, index) => {
                   const colors = getColors(pendingTab);
                   return (
                     <Link to={`/view-pending/${ticket.id}`} key={ticket.id}>
-                      <div
-                        className={`border-l-4 ${colors.borderColor} p-4 rounded shadow bg-white hover:bg-gray-50 mt-5`}
+                      <motion.div
+                        custom={index}
+                        variants={fadeInUp}
+                        initial="hidden"
+                        animate="visible"
+                        className={`border-l-4 ${colors.borderColor} p-4 rounded shadow bg-white hover:bg-blue-50 hover:shadow-xl transition-all duration-300 ease-in-out mt-5 py-7`}
                       >
                         <h3 className={`flex items-center gap-2 font-semibold ${colors.textColor}`}>
-                          <FaTicketAlt className="h-5 w-5" />
+                          {getIcon(ticket.type)}
                           Ticket #{ticket.id}
                         </h3>
                         <p className="text-xl text-black">Subject: {ticket.subject}</p>
                         <p className="text-sm text-black">Ticket Created By: {ticket.createdBy}</p>
                         <p className="text-sm text-black">Ticket Type: {ticket.type}</p>
                         <p className="text-sm text-black">Description: {ticket.description}</p>
-                      </div>
+                      </motion.div>
                     </Link>
                   );
                 })}
+
               </div>
             </div>
 
@@ -251,15 +281,19 @@ const Home = () => {
               </div>
 
               <div className="space-y-4">
-                {ticketsData.ongoing[ongoingTab].map((ticket) => {
+                {ticketsData.ongoing[ongoingTab].map((ticket, index) => {
                   const colors = getColors(ongoingTab);
                   return (
                     <Link to={`/viewon/${ticket.id}`} key={ticket.id}>
-                      <div
-                        className={`border-l-4 ${colors.borderColor} p-4 rounded shadow bg-white hover:bg-gray-50 mt-5`}
+                      <motion.div
+                        custom={index}
+                        variants={fadeInUp}
+                        initial="hidden"
+                        animate="visible"
+                        className={`border-l-4 ${colors.borderColor} p-4 rounded shadow bg-white hover:bg-blue-50 hover:shadow-xl transition-all duration-300 ease-in-out mt-5`}
                       >
                         <h3 className={`flex items-center gap-2 text-lg font-semibold ${colors.textColor}`}>
-                          <FaTicketAlt className="h-5 w-5" />
+                          {getIcon(ticket.type)}
                           Ticket #{ticket.id}
                         </h3>
                         <p className="text-xl text-black">Subject: {ticket.subject}</p>
@@ -269,7 +303,7 @@ const Home = () => {
                         {ticket.assignedEngineer && (
                           <p className="text-sm text-red-600">Assigned Engineer: {ticket.assignedEngineer}</p>
                         )}
-                      </div>
+                      </motion.div>
                     </Link>
                   );
                 })}
