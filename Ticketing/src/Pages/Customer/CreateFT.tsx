@@ -4,7 +4,26 @@ import Navbar from "../../components/Navbar";
 import { FaUser, FaExclamationTriangle, FaFileAlt } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-import axios from "axios";
+import axios from "axios";4
+import Select from "react-select";
+
+const faultyOptions = [
+  { value: "Firewall down or unreachable", label: "Firewall down or unreachable" },
+  { value: "Firewall rule not working", label: "Firewall rule not working" },
+  { value: "Firmware/OS corruption", label: "Firmware/OS corruption" },
+  { value: "HA / failover issue", label: "HA / failover issue" },
+  { value: "High CPU or memory usage", label: "High CPU or memory usage" },
+  { value: "Interface down or flapping", label: "Interface down or flapping" },
+  { value: "License failure", label: "License failure" },
+  { value: "Logging failure", label: "Logging failure" },
+  { value: "NAT failure", label: "NAT failure" },
+  { value: "Packet drops or session timeouts", label: "Packet drops or session timeouts" },
+  { value: "Routing problem", label: "Routing problem" },
+  { value: "Security service not functioning", label: "Security service not functioning" },
+  { value: "Traffic disruption", label: "Traffic disruption" },
+  { value: "Unexpected reboot", label: "Unexpected reboot" },
+  { value: "VPN connection failure", label: "VPN connection failure" },
+];
 
 const CreateFaultyRequest = () => {
   const navigate = useNavigate();
@@ -17,7 +36,7 @@ const CreateFaultyRequest = () => {
   const [designation, setDesignation] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
-  const [subject, setSubject] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState<{ value: string; label: string } | null>(null);
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -71,7 +90,7 @@ const CreateFaultyRequest = () => {
 
   // Submit handler (still using axios for POST)
   const handleSubmit = async () => {
-  if (!subject || !description || !priority) {
+  if (!selectedSubject || !description || !priority) {
     Swal.fire({
       icon: "warning",
       title: "All fields are required!",
@@ -83,7 +102,7 @@ const CreateFaultyRequest = () => {
   }
 
   const formData = new FormData();
-  formData.append("subject", subject);
+  formData.append("subject", selectedSubject.value);
   formData.append("description", description);
   formData.append("priority", priority);
   if (file) formData.append("document", file); // ✅ Make sure it's named "document"
@@ -202,29 +221,14 @@ const CreateFaultyRequest = () => {
                 Incident Related Info
               </h2>
               <div className="space-y-4">
-                <div className="mb-4">
-                  <select
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    className="w-1/2 px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800 font-jura"
-                  >
-                    <option value="" disabled selected>- Select Inquiry Type -</option>
-                    <option value="Firewall down or unreachable">Firewall down or unreachable</option>
-                    <option value="Firewall rule not working">Firewall rule not working</option>
-                    <option value="Firmware/OS corruption">Firmware/OS corruption</option>
-                    <option value="HA / failover issue">HA / failover issue</option>
-                    <option value="High CPU or memory usage">High CPU or memory usage</option>
-                    <option value="Interface down or flapping">Interface down or flapping</option>
-                    <option value="License failure">License failure</option>
-                    <option value="Logging failure">Logging failure</option>
-                    <option value="NAT failure">NAT failure</option>
-                    <option value="Packet drops or session timeouts">Packet drops or session timeouts</option>
-                    <option value="Routing problem">Routing problem</option>
-                    <option value="Security service not functioning">Security service not functioning</option>
-                    <option value="Traffic disruption">Traffic disruption</option>
-                    <option value="Unexpected reboot">Unexpected reboot</option>
-                    <option value="VPN connection failure">VPN connection failure</option>
-                  </select>
+                <div className="mb-4 w-full md:w-1/2">
+                  <Select
+                    options={faultyOptions}
+                    value={selectedSubject}
+                    onChange={setSelectedSubject}
+                    placeholder="Select Faulty Ticket Subject"
+                    className="font-jura text-m text-black"
+                  />
                 </div>
 
                 <textarea

@@ -588,6 +588,7 @@ def add_onticket_comment(ticket_id):
 
     company = decoded.get("company")
     customer_name = decoded.get("name", "Customer")
+    customer_email = decoded.get("email")
 
     if not company:
         return jsonify({"error": "Company not found in token"}), 400
@@ -633,7 +634,8 @@ def add_onticket_comment(ticket_id):
                 ticket_id=ticket.id,
                 subject=ticket.subject,
                 comment_content=content,
-                customer_name=customer_name
+                customer_name=customer_name,
+                cc_email=customer_email
             )
 
         new_comment = {

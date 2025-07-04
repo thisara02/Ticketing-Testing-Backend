@@ -5,11 +5,104 @@ import { FaUser, FaExclamationTriangle, FaFileAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import Select from "react-select";
 
 const CreateSR = () => {
   const navigate = useNavigate();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
+  const [selectedSubject, setSelectedSubject] = useState<{ value: string; label: string } | null>(null);
+
+  const inquiryOptions = [
+  { value: "Access Point Configurations", label: "Access Point Configurations" },
+  { value: "Add/Change/Remove Traffic Shaping Profiles and Policies (QoS)", label: "Add/Change/Remove Traffic Shaping Profiles and Policies (QoS)" },
+  { value: "Alert Generation", label: "Alert Generation" },
+  { value: "Application & URL Filter Configuration", label: "Application & URL Filter Configuration" },
+  { value: "Backup", label: "Backup" },
+  { value: "Certificate Import/Export Install", label: "Certificate Import/Export Install" },
+  { value: "Change User Password", label: "Change User Password" },
+  { value: "Cloud Configurations and Report Generation", label: "Cloud Configurations and Report Generation" },
+  { value: "Compliance", label: "Compliance" },
+  { value: "Create/Modify/Delete Administrator Account", label: "Create/Modify/Delete Administrator Account" },
+  { value: "Create/Modify/Delete IP Address", label: "Create/Modify/Delete IP Address" },
+  { value: "Create/Modify/Delete MAC Address", label: "Create/Modify/Delete MAC Address" },
+  { value: "Create/Modify/Delete User", label: "Create/Modify/Delete User" },
+  { value: "DCHP", label: "DCHP" },
+  { value: "DiallUp Tunnel Configuration", label: "DiallUp Tunnel Configuration" },
+  { value: "DNS Configuration", label: "DNS Configuration" },
+  { value: "Documentation (Customer)", label: "Documentation (Customer)" },
+  { value: "Documentation (Internal)", label: "Documentation (Internal)" },
+  { value: "DOS Policy Configuration", label: "DOS Policy Configuration" },
+  { value: "Enable Two-Factor-Authentication", label: "Enable Two-Factor-Authentication" },
+  { value: "Feasibility Study", label: "Feasibility Study" },
+  { value: "File Filter Configuration", label: "File Filter Configuration" },
+  { value: "Firmware Flash", label: "Firmware Flash" },
+  { value: "Firmware OS Upgrade", label: "Firmware OS Upgrade" },
+  { value: "HA Configurations", label: "HA Configurations" },
+  { value: "HA requirement", label: "HA requirement" },
+  { value: "Hardware Test", label: "Hardware Test" },
+  { value: "House Keeping", label: "House Keeping" },
+  { value: "Interface Configuration", label: "Interface Configuration" },
+  { value: "IP - MAC Bind", label: "IP - MAC Bind" },
+  { value: "IP Sec Tunnel Configuration", label: "IP Sec Tunnel Configuration" },
+  { value: "IPS Configurations", label: "IPS Configurations" },
+  { value: "IPv4 Policy Configuration", label: "IPv4 Policy Configuration" },
+  { value: "License Renewal", label: "License Renewal" },
+  { value: "Link Changes", label: "Link Changes" },
+  { value: "Load Balancing Configuration", label: "Load Balancing Configuration" },
+  { value: "Meeting", label: "Meeting" },
+  { value: "MIS", label: "MIS" },
+  { value: "Migration", label: "Migration" },
+  { value: "Multicast", label: "Multicast" },
+  { value: "Multicast Path Changes", label: "Multicast Path Changes" },
+  { value: "NAT - DNAT configuration", label: "NAT - DNAT configuration" },
+  { value: "NAT - New DNAT configuration", label: "NAT - New DNAT configuration" },
+  { value: "NAT - New SNAT configuration", label: "NAT - New SNAT configuration" },
+  { value: "NAT - SNAT configuration changes", label: "NAT - SNAT configuration changes" },
+  { value: "New Firewall Deployment", label: "New Firewall Deployment" },
+  { value: "New Router Configuration (Customers/Node)", label: "New Router Configuration (Customers/Node)" },
+  { value: "Node Issues", label: "Node Issues" },
+  { value: "Other", label: "Other" },
+  { value: "OSPF/BGP Changes in Nodes", label: "OSPF/BGP Changes in Nodes" },
+  { value: "Reboot", label: "Reboot" },
+  { value: "Remote Support", label: "Remote Support" },
+  { value: "Report Generation", label: "Report Generation" },
+  { value: "Resource / Logs Monitoring", label: "Resource / Logs Monitoring" },
+  { value: "Routing I Added", label: "Routing I Added" },
+  { value: "Routing I Changed", label: "Routing I Changed" },
+  { value: "Routing I Issue", label: "Routing I Issue" },
+  { value: "Routing - Policy Route Configurations", label: "Routing - Policy Route Configurations" },
+  { value: "Routing - Static Route Configurations", label: "Routing - Static Route Configurations" },
+  { value: "Routing Protocol I OSPF", label: "Routing Protocol I OSPF" },
+  { value: "Rule Optimization", label: "Rule Optimization" },
+  { value: "SD WAN Configuration", label: "SD WAN Configuration" },
+  { value: "Security I Other", label: "Security I Other" },
+  { value: "Security I Report Generate", label: "Security I Report Generate" },
+  { value: "Security I Vulnerability Scan", label: "Security I Vulnerability Scan" },
+  { value: "Security IPenetration Testing", label: "Security IPenetration Testing" },
+  { value: "Services / Ports - Create/Edit/Delete", label: "Services / Ports - Create/Edit/Delete" },
+  { value: "Special Event", label: "Special Event" },
+  { value: "SSL VPN Client Configuration", label: "SSL VPN Client Configuration" },
+  { value: "SSL VPN Configuration", label: "SSL VPN Configuration" },
+  { value: "System Change (Customers/Nodes)", label: "System Change (Customers/Nodes)" },
+  { value: "TAC Ticket - Global", label: "TAC Ticket - Global" },
+  { value: "TAC Ticket - Local", label: "TAC Ticket - Local" },
+  { value: "Testing", label: "Testing" },
+  { value: "Training", label: "Training" },
+  { value: "Upstream [AirTel / Dialog / SLT ]", label: "Upstream [AirTel / Dialog / SLT ]" },
+  { value: "Upstream Traffic Change", label: "Upstream Traffic Change" },
+  { value: "User Authentication LDAP Configuration", label: "User Authentication LDAP Configuration" },
+  { value: "User Authentication RADIUS Configuration", label: "User Authentication RADIUS Configuration" },
+  { value: "User Authentication SSO Configuration", label: "User Authentication SSO Configuration" },
+  { value: "Video Filter Configuration", label: "Video Filter Configuration" },
+  { value: "Virtual IP Configuration", label: "Virtual IP Configuration" },
+  { value: "VLAN Configuration", label: "VLAN Configuration" },
+  { value: "Web Filter Configuration", label: "Web Filter Configuration" },
+  { value: "Whitelist / Blacklist Application", label: "Whitelist / Blacklist Application" },
+  { value: "Whitelist Blacklist I-IRUIP", label: "Whitelist Blacklist I-IRUIP" },
+  { value: "Work Assigned", label: "Work Assigned" },
+  { value: "ZTNA Configuration", label: "ZTNA Configuration" }
+];
 
   // Form fields
   const [fullName, setFullName] = useState("");
@@ -17,7 +110,6 @@ const CreateSR = () => {
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [company, setCompany] = useState("");
-  const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -71,7 +163,7 @@ const CreateSR = () => {
 
   // Submit handler (still using axios for POST)
   const handleSubmit = async () => {
-  if (!subject || !description || !priority) {
+  if (!selectedSubject || !description || !priority) {
     Swal.fire({
       icon: "warning",
       title: "All fields are required!",
@@ -83,7 +175,7 @@ const CreateSR = () => {
   }
 
   const formData = new FormData();
-  formData.append("subject", subject);
+  formData.append("subject", selectedSubject?.value || "");
   formData.append("description", description);
   formData.append("priority", priority);
   if (file) formData.append("document", file); // ✅ Make sure it's named "document"
@@ -200,103 +292,17 @@ const CreateSR = () => {
                 Incident Related Info
               </h2>
               <div className="space-y-4">
-                <div>
-                  <select
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    className="w-1/2 px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800 font-jura"
-                  >
-                    <option value="" disabled>- Select Inquiry Type -</option>
-                    <option value="Access Point Configurations">Access Point Configurations</option>
-                    <option value="Add/Change/Remove Traffic Shaping Profiles and Policies (QoS)">Add/Change/Remove Traffic Shaping Profiles and Policies (QoS)</option>
-                    <option value="Alert Generation">Alert Generation</option>
-                    <option value="Application & URL Filter Configuration">Application & URL Filter Configuration</option>
-                    <option value="Backup">Backup</option>
-                    <option value="Certificate Import/Export Install">Certificate Import/Export Install</option>
-                    <option value="Change User Password">Change User Password</option>
-                    <option value="Cloud Configurations and Report Generation">Cloud Configurations and Report Generation</option>
-                    <option value="Compliance">Compliance</option>
-                    <option value="Create/Modify/Delete Administrator Account">Create/Modify/Delete Administrator Account</option>
-                    <option value="Create/Modify/Delete IP Address">Create/Modify/Delete IP Address</option>
-                    <option value="Create/Modify/Delete MAC Address">Create/Modify/Delete MAC Address</option>
-                    <option value="Create/Modify/Delete User">Create/Modify/Delete User</option>
-                    <option value="DCHP">DCHP</option>
-                    <option value="DiallUp Tunnel Configuration">DiallUp Tunnel Configuration</option>
-                    <option value="DNS Configuration">DNS Configuration</option>
-                    <option value="Documentation (Customer)">Documentation (Customer)</option>
-                    <option value="Documentation (Internal)">Documentation (Internal)</option>
-                    <option value="DOS Policy Configuration">DOS Policy Configuration</option>
-                    <option value="Enable Two-Factor-Authentication">Enable Two-Factor-Authentication</option>
-                    <option value="Feasibility Study">Feasibility Study</option>
-                    <option value="File Filter Configuration">File Filter Configuration</option>
-                    <option value="Firmware Flash">Firmware Flash</option>
-                    <option value="Firmware OS Upgrade">Firmware OS Upgrade</option>
-                    <option value="HA Configurations">HA Configurations</option>
-                    <option value="HA requirement">HA requirement</option>
-                    <option value="Hardware Test">Hardware Test</option>
-                    <option value="House Keeping">House Keeping</option>
-                    <option value="Interface Configuration">Interface Configuration</option>
-                    <option value="IP - MAC Bind">IP - MAC Bind</option>
-                    <option value="IP Sec Tunnel Configuration">IP Sec Tunnel Configuration</option>
-                    <option value="IPS Configurations">IPS Configurations</option>
-                    <option value="IPv4 Policy Configuration">IPv4 Policy Configuration</option>
-                    <option value="License Renewal">License Renewal</option>
-                    <option value="Link Changes">Link Changes</option>
-                    <option value="Load Balancing Configuration">Load Balancing Configuration</option>
-                    <option value="Meeting">Meeting</option>
-                    <option value="MIS">MIS</option>
-                    <option value="Migration">Migration</option>
-                    <option value="Multicast">Multicast</option>
-                    <option value="Multicast Path Changes">Multicast Path Changes</option>
-                    <option value="NAT - DNAT configuration">NAT - DNAT configuration</option>
-                    <option value="NAT - New DNAT configuration">NAT - New DNAT configuration</option>
-                    <option value="NAT - New SNAT configuration">NAT - New SNAT configuration</option>
-                    <option value="NAT - SNAT configuration changes">NAT - SNAT configuration changes</option>
-                    <option value="New Firewall Deployment">New Firewall Deployment</option>
-                    <option value="New Router Configuration (Customers/Node)">New Router Configuration (Customers/Node)</option>
-                    <option value="Node Issues">Node Issues</option>
-                    <option value="Other">Other</option>
-                    <option value="OSPF/BGP Changes in Nodes">OSPF/BGP Changes in Nodes</option>
-                    <option value="Reboot">Reboot</option>
-                    <option value="Remote Support">Remote Support</option>
-                    <option value="Report Generation">Report Generation</option>
-                    <option value="Resource / Logs Monitoring">Resource / Logs Monitoring</option>
-                    <option value="Routing I Added">Routing I Added</option>
-                    <option value="Routing I Changed">Routing I Changed</option>
-                    <option value="Routing I Issue">Routing I Issue</option>
-                    <option value="Routing - Policy Route Configurations">Routing - Policy Route Configurations</option>
-                    <option value="Routing - Static Route Configurations">Routing - Static Route Configurations</option>
-                    <option value="Routing Protocol I OSPF">Routing Protocol I OSPF</option>
-                    <option value="Rule Optimization">Rule Optimization</option>
-                    <option value="SD WAN Configuration">SD WAN Configuration</option>
-                    <option value="Security I Other">Security I Other</option>
-                    <option value="Security I Report Generate">Security I Report Generate</option>
-                    <option value="Security I Vulnerability Scan">Security I Vulnerability Scan</option>
-                    <option value="Security IPenetration Testing">Security IPenetration Testing</option>
-                    <option value="Services / Ports - Create/Edit/Delete">Services / Ports - Create/Edit/Delete</option>
-                    <option value="Special Event">Special Event</option>
-                    <option value="SSL VPN Client Configuration">SSL VPN Client Configuration</option>
-                    <option value="SSL VPN Configuration">SSL VPN Configuration</option>
-                    <option value="System Change (Customers/Nodes)">System Change (Customers/Nodes)</option>
-                    <option value="TAC Ticket - Global">TAC Ticket - Global</option>
-                    <option value="TAC Ticket - Local">TAC Ticket - Local</option>
-                    <option value="Testing">Testing</option>
-                    <option value="Training">Training</option>
-                    <option value="Upstream [AirTel 1 Dialog f SLT ]">Upstream [AirTel / Dialog / SLT ]</option>
-                    <option value="Upstream Traffic Change">Upstream Traffic Change</option>
-                    <option value="User Authentication LDAP Configuration">User Authentication LDAP Configuration</option>
-                    <option value="User Authentication RADIUS Configuration">User Authentication RADIUS Configuration</option>
-                    <option value="User Authentication SSO Configuration">User Authentication SSO Configuration</option>
-                    <option value="Video Filter Configuration">Video Filter Configuration</option>
-                    <option value="Virtual IP Configuration">Virtual IP Configuration</option>
-                    <option value="VLAN Configuration">VLAN Configuration</option>
-                    <option value="Web Filter Configuration">Web Filter Configuration</option>
-                    <option value="Whitelist / Blacklist Application">Whitelist / Blacklist Application</option>
-                    <option value="Whitelist Blacklist I-IRUIP">Whitelist Blacklist I-IRUIP</option>
-                    <option value="Work Assigned">Work Assigned</option>
-                    <option value="ZTNA Configuration">ZTNA Configuration</option>
-                  </select>
-                </div>
+               <div className="w-full md:w-1/2">
+                <Select
+                  options={inquiryOptions}
+                  value={selectedSubject}
+                  onChange={(option) => setSelectedSubject(option)}
+                  placeholder="Select Inquiry Type"
+                  isSearchable
+                  className="font-jura text-m text-black"
+                  classNamePrefix="react-select"
+                />
+              </div>
 
                 <textarea
                   rows={5}

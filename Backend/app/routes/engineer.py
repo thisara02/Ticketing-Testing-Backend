@@ -310,6 +310,7 @@ def eng_add_ticket_comment(ticket_id):
         return jsonify({"error": "Invalid token"}), 401
 
     engineer_name = decoded.get("name", "Engineer")
+    engineer_email = decoded.get("email")
 
     ticket = Ticket.query.filter(Ticket.id == ticket_id).first()
     if not ticket:
@@ -345,7 +346,8 @@ def eng_add_ticket_comment(ticket_id):
             requester_name=ticket.requester_name,
             ticket_id=ticket.id,
             subject=ticket.subject,
-            comment_content=content
+            comment_content=content,
+            cc_email=engineer_email
         )
         print("DEBUG: Email sent status:", email_sent)
 
@@ -443,6 +445,7 @@ def eng_add_onticket_comment(ticket_id):
         return jsonify({"error": "Invalid token"}), 401
 
     engineer_name = decoded.get("name", "Engineer")
+    engineer_email = decoded.get("email")
 
     ticket = Ticket.query.filter(Ticket.id == ticket_id).first()
     if not ticket:
@@ -478,7 +481,8 @@ def eng_add_onticket_comment(ticket_id):
             requester_name=ticket.requester_name,
             ticket_id=ticket.id,
             subject=ticket.subject,
-            comment_content=content
+            comment_content=content,
+            cc_email=engineer_email
         )
         print("DEBUG: Email sent status:", email_sent)
 
@@ -580,6 +584,7 @@ def eng_add_closeticket_comment(ticket_id):
         return jsonify({"error": "Invalid token"}), 401
 
     engineer_name = decoded.get("name", "Engineer")  # Get customer name from token
+    engineer_email = decoded.get("email")
 
     # Verify ticket exists and belongs to this company
     ticket = Ticket.query.filter(

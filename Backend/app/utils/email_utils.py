@@ -147,13 +147,13 @@ def send_ft_confirmation_email(user_email, user_name, ticket_id, subject, priori
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>Service Request Created Successfully</h1>
+                    <h1>Faulty Ticket Created Successfully</h1>
                 </div>
                 
                 <div class="content">
                     <p>Dear {user_name},</p>
                     
-                    <p>Your service request has been created successfully and is now being processed by our technical team.</p>
+                    <p>Your Faulty Ticket has been created successfully and is now being processed by our technical team.</p>
                     
                     <div class="ticket-details">
                         <h3>Ticket Details:</h3>
@@ -189,7 +189,7 @@ def send_ft_confirmation_email(user_email, user_name, ticket_id, subject, priori
         msg.body = f"""
         Dear {user_name},
 
-        Your service request has been created successfully and is now being processed by our technical team.
+        Your Faulty Ticket has been created successfully and is now being processed by our technical team.
 
         Ticket Details:
         - Ticket ID: Ticket #-{ticket_id:06d}
@@ -419,7 +419,7 @@ def notify_new_pending_ft_to_engineer(ticket_id, subject, priority, description,
 
         msg = Message(
             subject='New Faulty Ticket Request Available',
-            recipients=[engineer_email],
+            recipients=engineer_email,
             sender=current_app.config['MAIL_DEFAULT_SENDER']
         )
 
@@ -448,7 +448,7 @@ def notify_new_pending_ft_to_engineer(ticket_id, subject, priority, description,
                     <p>Dear {engineer_name},</p>
                     <p>A new faulty ticket has been submitted and is currently pending assignment.</p>
                     <div class="ticket-box">
-                        <p><strong>Ticket ID:</strong> SR-{ticket_id:06d}</p>
+                        <p><strong>Ticket ID:</strong> FT-{ticket_id:06d}</p>
                         <p><strong>Subject:</strong> {subject}</p>
                         <p><strong>Description:</strong> {description}</p>
                         <p><strong>Priority:</strong> <span class="priority-{priority.lower()}">{priority}</span></p>
@@ -473,7 +473,7 @@ def notify_new_pending_ft_to_engineer(ticket_id, subject, priority, description,
         A new faulty ticket has been submitted and is currently pending assignment.
 
         Ticket Details:
-        - Ticket ID: SR-{ticket_id:06d}
+        - Ticket ID: FT-{ticket_id:06d}
         - Subject: {subject}
         - Description: {description}
         - Priority: {priority}
@@ -594,13 +594,14 @@ def notify_new_pending_sr_to_engineer(ticket_id, subject, priority, description,
         return False
 
 
-def send_comment_notification_to_requester(requester_email, requester_name, ticket_id, subject, comment_content):
+def send_comment_notification_to_requester(requester_email, requester_name, ticket_id, subject, comment_content,cc_email=None):
     """Notify customer when an engineer comments on their ticket"""
     try:
         msg = Message(
             subject=f"New Comment on Your Ticket #{ticket_id:06d}",
             recipients=[requester_email],
-            sender=current_app.config['MAIL_DEFAULT_SENDER']
+            sender=current_app.config['MAIL_DEFAULT_SENDER'],
+            cc=[cc_email] if cc_email else []
         )
 
         msg.html = f"""
@@ -668,13 +669,14 @@ def send_comment_notification_to_requester(requester_email, requester_name, tick
         print(f"Failed to send comment notification email: {e}")
         return False
 
-def notify_engineer_about_customer_comment(engineer_email, ticket_id, subject, comment_content, customer_name):
+def notify_engineer_about_customer_comment(engineer_email, ticket_id, subject, comment_content, customer_name,cc_email=None):
     """Notify assigned engineer when a customer comments on a ticket"""
     try:
         msg = Message(
             subject=f"Customer Comment on Ticket #{ticket_id:06d}",
             recipients=[engineer_email],
-            sender=current_app.config['MAIL_DEFAULT_SENDER']
+            sender=current_app.config['MAIL_DEFAULT_SENDER'],
+            cc=[cc_email] if cc_email else []
         )
 
         msg.html = f"""
