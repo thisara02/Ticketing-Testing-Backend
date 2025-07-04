@@ -146,11 +146,11 @@ const Home = () => {
           <div className="p-4 grid grid-cols-1 md:grid-cols-4 gap-8 px-20 pt-10 font-jura">
             {[
               {
-                label: "Pending Issue Count",
+                label: "Current Pending Requests Count",
                 count: ticketCounts.pending,
               },
               {
-                label: "Ongoing Issue Count",
+                label: "Current Ongoing Requests Count",
                 count: ticketCounts.ongoing,
               },
               {
@@ -175,7 +175,7 @@ const Home = () => {
           <div className="flex flex-col md:flex-row gap-6 px-20 mt-8 pb-10 font-jura">
             {/* Pending Tickets */}
             <div className="w-full md:w-1/2">
-              <h2 className="text-2xl font-bold text-[#000000] mb-4">Pending Issues</h2>
+              <h2 className="text-2xl font-bold text-[#000000] mb-4">Pending Requests / Issues</h2>
 
               <div className="flex space-x-4 mb-4">
                 <button
@@ -225,7 +225,7 @@ const Home = () => {
 
             {/* Ongoing Tickets */}
             <div className="w-full md:w-1/2">
-              <h2 className="text-2xl font-bold text-[#000000] mb-4">Ongoing Issues</h2>
+              <h2 className="text-2xl font-bold text-[#000000] mb-4">Ongoing Requests / Issues</h2>
 
               <div className="flex space-x-4 mb-4">
                 <button

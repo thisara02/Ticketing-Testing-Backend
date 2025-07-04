@@ -77,7 +77,7 @@ const Login = () => {
       {/* Fullscreen Card */}
       <div className="flex w-full h-full lg:h-[75%] lg:w-[90%] xl:w-[60%] 2xl:w-[60%] bg-white  rounded-lg shadow-lg overflow-hidden">
         {/* Left Panel - Login */}
-        <div className="w-full lg:w-3/5 flex items-center justify-center p-4 bg-white">
+        <div className="w-full lg:w-3/5 flex items-center justify-center p-4 bg-blue-100">
           <div className="w-full max-w-md">
             <div className="flex justify-center mt-4 pb-2">
               <img src={Logo} alt="LankaCom" className="h-14" />

@@ -249,6 +249,9 @@ def create_faulty_ticket():
             print(f"Confirmation email sent to {user_email}")
         except Exception as e:
             print(f"Failed to send confirmation email: {str(e)}")
+            
+        engineers = Engineer.query.with_entities(Engineer.email).all()
+        email_list = [eng.email for eng in engineers if eng.email]
 
         try:
             notify_new_pending_ft_to_engineer(
@@ -257,7 +260,8 @@ def create_faulty_ticket():
                 priority=data.get('priority'),
                 description=data.get('description'),
                 requester_name=user_name,
-                requester_company=user_company
+                requester_company=user_company,
+                recipient_emails=email_list
             )
             print("Engineer notified about new pending ticket.")
         except Exception as e:
@@ -379,7 +383,8 @@ def assign_ticket(ticket_id):
             return jsonify({"error": "Invalid token"}), 401
 
         engineer_name = decoded.get("name")
-        engineer_contact = decoded.get("mobile")  # updated
+        engineer_contact = decoded.get("mobile")
+        engineer_email = decoded.get("email") # updated
 
         if not engineer_name or not engineer_contact:
             return jsonify({"error": "Missing engineer info in token"}), 400
@@ -389,7 +394,7 @@ def assign_ticket(ticket_id):
             return jsonify({"error": "Ticket not found"}), 404
 
         ticket.engineer_name = engineer_name
-        ticket.engineer_contact = engineer_contact
+        ticket.engineer_email = engineer_email
         ticket.status = "Ongoing"
 
         db.session.commit()
@@ -400,7 +405,7 @@ def assign_ticket(ticket_id):
             ticket_id=ticket.id,
             subject=ticket.subject,
             engineer_name=engineer_name,
-            engineer_contact=engineer_contact
+            engineer_email=engineer_email
         )
 
         return jsonify({"message": "Ticket assigned successfully"}), 200

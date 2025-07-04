@@ -65,6 +65,7 @@ def send_sr_confirmation_email(user_email, user_name, ticket_id, subject, priori
                     
                     <p>Best regards,<br>
                     <strong>Cyber Security Operations Team</strong></p>
+                    <strong>Lanka Communication Services (Pvt.) Ltd</strong></p>
                 </div>
                 
                 <div class="footer">
@@ -96,6 +97,7 @@ def send_sr_confirmation_email(user_email, user_name, ticket_id, subject, priori
 
         Best regards,
         Cyber Security Operations Team
+        Lanka Communication Services (Pvt.) Ltd
         
         ---
         This is an automated message. Please do not reply to this email.
@@ -171,6 +173,7 @@ def send_ft_confirmation_email(user_email, user_name, ticket_id, subject, priori
                     
                     <p>Best regards,<br>
                     <strong>Cyber Security Operations Team</strong></p>
+                    <strong>Lanka Communication Services (Pvt.) Ltd</strong></p>
                 </div>
                 
                 <div class="footer">
@@ -202,6 +205,7 @@ def send_ft_confirmation_email(user_email, user_name, ticket_id, subject, priori
 
         Best regards,
         Cyber Security Operations Team
+        Lanka Communication Services (Pvt.) Ltd
         
         ---
         This is an automated message. Please do not reply to this email.
@@ -221,7 +225,7 @@ def send_ft_confirmation_email(user_email, user_name, ticket_id, subject, priori
         return False
     
     
-def send_assignment_notification_email(user_email, user_name, ticket_id, subject, engineer_name, engineer_contact):
+def send_assignment_notification_email(user_email, user_name, ticket_id, subject, engineer_name, engineer_email):
     """Notify user about assigned engineer"""
     try:
         msg = Message(
@@ -251,10 +255,10 @@ def send_assignment_notification_email(user_email, user_name, ticket_id, subject
                     <p>Dear {user_name},</p>
                     <p>Your ticket <strong> #{ticket_id:06d} -  {subject}</strong> has been assigned to one of our engineers.</p>
                     <p><strong>Assigned Engineer:</strong> {engineer_name}<br>
-                    <strong>Contact:</strong> {engineer_contact}</p>
+                    <strong>Email:</strong> {engineer_email}</p>
                     <p>They will be in touch shortly. You can contact them directly for urgent matters.</p>
                     <p>Thank you for your continued patience.</p>
-                    <p>Best regards,<br><strong>Cyber Security Operations Team</strong></p>
+                    <p>Best regards,<br><strong>Cyber Security Operations Team</strong></p><br><strong>Lanka Communication Services (Pvt.) Ltd</strong></p>
                 </div>
                 <div class="footer">
                     <p>This is an automated message. Please do not reply.</p>
@@ -270,12 +274,13 @@ def send_assignment_notification_email(user_email, user_name, ticket_id, subject
         Your ticket #{ticket_id:06d} - {subject} has been assigned to:
 
         Engineer: {engineer_name}
-        Contact: {engineer_contact}
+        Email: {engineer_email}
 
         They will contact you soon. Feel free to reach out for urgent support.
 
         Best regards,
         Cyber Security Operations Team
+        Lanka Communication Services (Pvt.) Ltd
         """
 
         thread = threading.Thread(
@@ -406,10 +411,10 @@ def send_admin_otp_email(user_email, otp_code):
         print(f"Failed to send OTP email: {e}")
         return False
     
-def notify_new_pending_ft_to_engineer(ticket_id, subject, priority, description, requester_name, requester_company):
+def notify_new_pending_ft_to_engineer(ticket_id, subject, priority, description, requester_name, requester_company, recipient_emails):
     """Send notification to fixed engineer email when a new pending ticket is created"""
     try:
-        engineer_email = "shammid@lankacom.net"
+        engineer_email = recipient_emails
         engineer_name = "Engineer Team"
 
         msg = Message(

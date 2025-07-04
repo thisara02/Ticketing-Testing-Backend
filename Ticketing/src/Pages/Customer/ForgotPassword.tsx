@@ -20,13 +20,32 @@ const ForgotPass = () => {
       });
       const data = await res.json();
       if (!res.ok) {
-        Swal.fire("Error", data.error || "Cannot send OTP", "error");
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: data.error || "Cannot send OTP",
+          showConfirmButton: false,
+          timer: 2000 // Auto-close after 2 seconds
+        });
         return;
       }
-      Swal.fire("OTP Sent!", "Check your inbox.", "success");
+      Swal.fire({
+        icon: "success",
+        title: "OTP Sent!",
+        text: "Check your inbox.",
+        showConfirmButton: false,
+        timer: 2000
+      });
+
       setShowOtpSection(true);
     } catch (err) {
-      Swal.fire("Error", "Server error", "error");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Server error",
+        showConfirmButton: false,
+        timer: 2000
+      });
     }
   };
 
@@ -42,7 +61,13 @@ const ForgotPass = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        Swal.fire("Success", "OTP verified", "success");
+        Swal.fire({
+          icon: "success",
+          title: "Success",
+          text: "OTP verified",
+          showConfirmButton: false,
+          timer: 2000,
+        });
         // Navigate with resetToken
         // After successful OTP verification:
         localStorage.setItem("resetEmail", email);
@@ -53,15 +78,39 @@ const ForgotPass = () => {
           },
         });
       } else if (res.status === 401) {
-        Swal.fire("Invalid OTP", data.error, "error");
+        Swal.fire({
+          icon: "info",
+          title: "Invalid OTP",
+          text: data.error,
+          showConfirmButton: false,
+          timer: 2000,
+        });
       } else if (res.status === 403) {
-        Swal.fire("Expired OTP", "Please request again", "warning");
+        Swal.fire({
+          icon: "info",
+          title: "Expired OTP",
+          text: "Please request again",
+          showConfirmButton: false,
+          timer: 2000,
+        });
         setTimeout(() => navigate("/login"), 2000);
       } else {
-        Swal.fire("Error", data.error || "Verification failed", "error");
+        Swal.fire({
+          icon: "info",
+          title: "Error",
+          text: data.error || "Verification failed",
+          showConfirmButton: false,
+          timer: 2000,
+        });
       }
     } catch {
-      Swal.fire("Error", "Server error", "error");
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Server error",
+          showConfirmButton: false,
+          timer: 2000,
+        });
     }
   };
 
