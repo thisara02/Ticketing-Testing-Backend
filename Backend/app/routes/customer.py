@@ -384,8 +384,6 @@ def get_ticket_counts():
         return jsonify({"error": str(e)}), 500
 
 
-
-
 @customer_bp.route('/tickets/<int:ticket_id>', methods=['GET'])
 def get_customer_ticket_details(ticket_id):
     auth_header = request.headers.get("Authorization", None)

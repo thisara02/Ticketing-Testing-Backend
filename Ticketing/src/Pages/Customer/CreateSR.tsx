@@ -214,6 +214,11 @@ const CreateSR = () => {
         showCancelButton: true,
         confirmButtonText: "Proceed Anyway",
         cancelButtonText: "Cancel",
+        customClass: {
+          confirmButton: 'bg-green-500 hover:bg-green-600 text-black font-semibold px-4 py-2 rounded mr-2',
+          cancelButton: 'bg-gray-300 hover:bg-gray-400 text-black font-semibold px-4 py-2 rounded',
+        },
+        buttonsStyling: false, // important to allow Tailwind styles to apply
       }).then((result) => {
         if (result.isConfirmed) {
           handleSubmit(true); // 🔁 Call again with override=true
@@ -221,11 +226,12 @@ const CreateSR = () => {
       });
     } else {
       Swal.fire({
-        title: "Error",
+        title: "Attention!",
         text: data?.error || "Something went wrong.",
         icon: "error",
-        timer: 2000,
-        showConfirmButton: false,
+        customClass: {
+          confirmButton: 'bg-green-500 hover:bg-green-600 text-black font-semibold px-4 py-2 rounded mr-2',
+        },
       });
     }
   }

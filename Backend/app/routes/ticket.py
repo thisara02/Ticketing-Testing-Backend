@@ -107,6 +107,11 @@ def create_service_request():
                 return jsonify({
                     "error": "Your monthly SR quota including purchased bundles is exhausted, and your one-time extra SR has already been used. Contact Lanakacom Presales via 0912250764 to purchase more ticket bundles."
                 }), 403
+                pass
+            else:
+                quota_usage = SRQuotaUsage(company=user_company, month=current_month, used_extra=False)
+                db.session.add(quota_usage)
+                db.session.commit()
 
             # If client did not confirm override yet
             if data.get("override") != "true":
