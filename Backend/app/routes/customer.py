@@ -20,6 +20,7 @@ from app.models import OTPModel
 from app.utils.email_utils import notify_engineer_about_customer_comment
 from app.models import CompanySupport, SupportType
 from app.models import AdditionalTicketBundle
+from app.models import SRQuotaUsage
 
 customer_bp = Blueprint("customer", __name__, url_prefix="/api/customers")  # Adjust prefix to match frontend
 
@@ -368,8 +369,11 @@ def get_ticket_counts():
         bundle_total = db.session.query(func.sum(AdditionalTicketBundle.additional_tickets))\
             .filter_by(company=user_company, month=current_month)\
             .scalar() or 0
+            
+        quota_usage = SRQuotaUsage.query.filter_by(company=user_company, month=current_month).first()
+        extra_granted = 1 if quota_usage and quota_usage.used_extra else 0
 
-        total_limit = default_limit + bundle_total
+        total_limit = default_limit + bundle_total + extra_granted
         balance_service_requests = max(0, total_limit - used_service_requests)
 
         return jsonify({

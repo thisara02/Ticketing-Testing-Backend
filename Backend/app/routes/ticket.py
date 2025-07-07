@@ -27,7 +27,6 @@ def create_service_request():
         # JWT Auth
         secret = current_app.config['SECRET_KEY']
         auth_header = request.headers.get("Authorization", None)
-
         if not auth_header:
             return jsonify({"error": "Authorization header missing"}), 401
 
@@ -54,7 +53,6 @@ def create_service_request():
         data = request.form
         uploaded_file = request.files.get('document')
 
-        # Validate required fields
         if not data.get('subject') or not data.get('description') or not data.get('priority'):
             return jsonify({'error': 'Missing required fields'}), 400
 
@@ -71,56 +69,59 @@ def create_service_request():
         current_month = datetime.utcnow().strftime('%Y-%m')
         first_day_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-        # Check ticket count used
+        # Count used service requests this month
         monthly_ticket_count = db.session.query(func.count()).filter(
             Ticket.requester_company == user_company,
             Ticket.created_at >= first_day_of_month,
             Ticket.type == "Service Request"
         ).scalar()
 
-        # Fetch additional bundle for the month
+        # Fetch additional bundle
         additional = AdditionalTicketBundle.query.filter_by(
             company=user_company,
             month=current_month
         ).first()
         additional_count = additional.additional_tickets if additional else 0
 
-        total_allowed_tickets = base_ticket_limit + additional_count
+        # Check if extra was used
+        quota_usage = SRQuotaUsage.query.filter_by(
+            company=user_company,
+            month=current_month
+        ).first()
+        extra_granted = 1 if quota_usage and quota_usage.used_extra else 0
+
+        total_allowed_tickets = base_ticket_limit + additional_count + extra_granted
 
         print("==== Quota Check Debug ====")
         print(f"Company: {user_company}")
-        print(f"Support Type: {company_support.support_type}")
         print(f"Base Limit: {base_ticket_limit}")
         print(f"Additional Tickets: {additional_count}")
-        print(f"Total Allowed: {total_allowed_tickets}")
+        print(f"Used Extra Before: {extra_granted}")
         print(f"Used This Month: {monthly_ticket_count}")
+        print(f"Total Allowed (including extra if used): {total_allowed_tickets}")
         print("===========================")
 
-        # Quota exceeded
         if monthly_ticket_count >= total_allowed_tickets:
-            quota_usage = SRQuotaUsage.query.filter_by(
-                company=user_company,
-                month=current_month
-            ).first()
-
+            # Already used all quotas including extra
             if quota_usage and quota_usage.used_extra:
                 return jsonify({
                     "error": "Your monthly SR quota including purchased bundles is exhausted, and your one-time extra SR has already been used. Contact Lanakacom Presales via 0912250764 to purchase more ticket bundles."
                 }), 403
-                pass
-            else:
+
+            # Create quota usage entry if not exists
+            if not quota_usage:
                 quota_usage = SRQuotaUsage(company=user_company, month=current_month, used_extra=False)
                 db.session.add(quota_usage)
                 db.session.commit()
 
-            # If client did not confirm override yet
+            # Client must confirm override
             if data.get("override") != "true":
                 return jsonify({
                     "warning": "Your monthly SR quota is exhausted. You are allowed to submit ONE extra SR for this month. After this, you must purchase extra ticket bundles. Contact Lanakacom Presales via 0912250764.",
                     "allow_override": True
                 }), 409
 
-        # Create ticket
+        # Create the ticket
         ticket = Ticket(
             subject=data.get('subject'),
             type="Service Request",
@@ -137,7 +138,7 @@ def create_service_request():
             engineer_contact=""
         )
 
-        # Save uploaded file
+        # Handle document upload
         if uploaded_file:
             upload_dir = os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads'))
             if not os.path.exists(upload_dir):
@@ -152,8 +153,8 @@ def create_service_request():
         # Save ticket
         db.session.add(ticket)
 
-        # If one-time extra SR is used now
-        if monthly_ticket_count >= total_allowed_tickets:
+        # If using extra SR now, mark it
+        if monthly_ticket_count >= (base_ticket_limit + additional_count):
             if not quota_usage:
                 quota_usage = SRQuotaUsage(company=user_company, month=current_month, used_extra=True)
                 db.session.add(quota_usage)
@@ -162,7 +163,7 @@ def create_service_request():
 
         db.session.commit()
 
-        # Send emails
+        # Send confirmation + notify engineers
         from app.utils.email_utils import send_sr_confirmation_email, notify_new_pending_sr_to_engineer
 
         try:
@@ -200,6 +201,7 @@ def create_service_request():
     except Exception as e:
         print(f"Error creating service request: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
 
     
     
