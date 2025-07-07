@@ -13,6 +13,7 @@ from app.utils.email_utils import send_admin_otp_email
 from app.models import OTPModel
 from app.utils.email_utils import send_otp_email
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from app.models import SRQuotaUsage, AdditionalTicketBundle
 
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
@@ -738,3 +739,25 @@ def admin_dashboard_summary():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+      
+@admin_bp.route('/add-bundle', methods=['POST'])
+def add_additional_bundle():
+    data = request.get_json()
+    company = data.get('company')
+    month = data.get('month')  # Format: YYYY-MM
+    tickets = data.get('additional_tickets')
+
+    if not company or not month or not tickets:
+        return jsonify({'error': 'Missing fields'}), 400
+
+    # Upsert logic (update if exists, else insert)
+    bundle = AdditionalTicketBundle.query.filter_by(company=company, month=month).first()
+    if bundle:
+        bundle.additional_tickets += tickets
+    else:
+        bundle = AdditionalTicketBundle(company=company, month=month, additional_tickets=tickets)
+        db.session.add(bundle)
+
+    db.session.commit()
+    return jsonify({'message': f'{tickets} additional tickets added for {company} in {month}'}), 200

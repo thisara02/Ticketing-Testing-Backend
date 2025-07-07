@@ -162,7 +162,7 @@ const CreateSR = () => {
   }, [navigate]);
 
   // Submit handler (still using axios for POST)
-  const handleSubmit = async () => {
+  const handleSubmit = async (override = false) => {
   if (!selectedSubject || !description || !priority) {
     Swal.fire({
       icon: "warning",
@@ -178,7 +178,8 @@ const CreateSR = () => {
   formData.append("subject", selectedSubject?.value || "");
   formData.append("description", description);
   formData.append("priority", priority);
-  if (file) formData.append("document", file); // ✅ Make sure it's named "document"
+  if (file) formData.append("document", file);
+  if (override) formData.append("override", "true"); // ✅ Only if override is confirmed
 
   try {
     const res = await axios.post(
@@ -202,16 +203,34 @@ const CreateSR = () => {
     });
     setTimeout(() => navigate("/home"), 1500);
   } catch (error: any) {
-    console.error("Error creating request:", error.response?.data || error.message);
-    Swal.fire({
-      title: "Error",
-      text: error.response?.data?.error || "Something went wrong.",
-      icon: "error",
-      timer: 2000,
-      showConfirmButton: false,
-    });
+    const data = error.response?.data;
+
+    // 🔁 If server returns quota warning with override option
+    if (error.response?.status === 409 && data?.allow_override) {
+      Swal.fire({
+        title: "Quota Exceeded",
+        html: data.warning || "You are allowed to submit one extra SR this month.<br>Proceed?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Proceed Anyway",
+        cancelButtonText: "Cancel",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          handleSubmit(true); // 🔁 Call again with override=true
+        }
+      });
+    } else {
+      Swal.fire({
+        title: "Error",
+        text: data?.error || "Something went wrong.",
+        icon: "error",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    }
   }
 };
+
 
 
 
@@ -360,7 +379,7 @@ const CreateSR = () => {
             {/* Submit */}
             <div className="text-left">
               <button
-                onClick={handleSubmit}
+                onClick={() => handleSubmit()}
                 className="bg-teal-600 text-white px-6 py-2 rounded-md hover:bg-teal-700 transition mt-10 p-5 font-jura"
               >
                 Submit Request

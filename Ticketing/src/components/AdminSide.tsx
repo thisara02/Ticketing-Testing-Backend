@@ -160,6 +160,18 @@ const AdminSide: React.FC<SidebarProps> = ({ isOpen }) => {
           </NavLink>
 
           <NavLink
+            to="/admin-add-bundle"
+            className={({ isActive }) =>
+              `relative flex items-center space-x-3 text-gray-800 transition font-jura
+              hover:text-blue-600 after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:bg-blue-500 after:transition-all after:duration-300
+              ${isActive ? 'after:w-full text-blue-600' : 'after:w-0 group-hover:after:w-full'}`
+            }
+          >
+            <FaUserPlus />
+            <span>Additional Bundles Adding</span>
+          </NavLink>
+
+          <NavLink
             to="/create-cus"
             className={({ isActive }) =>
               `relative flex items-center space-x-3 text-gray-800 transition font-jura

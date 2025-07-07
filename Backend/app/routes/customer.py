@@ -3,6 +3,7 @@ import os
 import random
 from flask import Blueprint, request, jsonify, current_app, send_from_directory
 import pytz
+from sqlalchemy import func
 from app import db
 from app.models import Customer
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -18,6 +19,7 @@ from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from app.models import OTPModel
 from app.utils.email_utils import notify_engineer_about_customer_comment
 from app.models import CompanySupport, SupportType
+from app.models import AdditionalTicketBundle
 
 customer_bp = Blueprint("customer", __name__, url_prefix="/api/customers")  # Adjust prefix to match frontend
 
@@ -345,24 +347,30 @@ def get_ticket_counts():
         decoded = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
         user_company = decoded.get("company")
 
-        # Monthly time window
+        # Monthly values
+        current_month = datetime.utcnow().strftime("%Y-%m")
         first_day = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-        # Counts
+        # Ticket counts
         pending = Ticket.query.filter_by(requester_company=user_company, status="Pending").count()
         ongoing = Ticket.query.filter_by(requester_company=user_company, status="Ongoing").count()
-
         used_service_requests = Ticket.query.filter(
             Ticket.requester_company == user_company,
             Ticket.created_at >= first_day,
             Ticket.type == "Service Request"
         ).count()
 
+        # Limits from support + bundle
         company_support = CompanySupport.query.filter_by(company=user_company).first()
         support_type = SupportType.query.filter_by(name=company_support.support_type).first()
-        limit = support_type.ticket_limit
+        default_limit = support_type.ticket_limit
 
-        balance_service_requests = max(0, limit - used_service_requests)
+        bundle_total = db.session.query(func.sum(AdditionalTicketBundle.additional_tickets))\
+            .filter_by(company=user_company, month=current_month)\
+            .scalar() or 0
+
+        total_limit = default_limit + bundle_total
+        balance_service_requests = max(0, total_limit - used_service_requests)
 
         return jsonify({
             "pending": pending,
@@ -370,9 +378,11 @@ def get_ticket_counts():
             "used_service_requests": used_service_requests,
             "balance_service_requests": balance_service_requests
         })
+
     except Exception as e:
         print("Ticket count error:", str(e))
         return jsonify({"error": str(e)}), 500
+
 
 
 

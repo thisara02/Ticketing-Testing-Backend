@@ -30,6 +30,7 @@ import AdminNotification from "./Pages/Admin/AdminNotifications"
 import AdminProfile from "./Pages/Admin/AdminProfile"
 import AdminHistory from "./Pages/Admin/AdminHistory"
 import AdminForgotPass from "./Pages/Admin/AdminForgotPassword"
+import AdminAddBunldes from "./Pages/Admin/AdminAddBundle"
 import AdminResetPass from "./Pages/Admin/AdminResetPassword"
 import AdminViewPending from "./Pages/Admin/AdminViewPending"
 import AdminViewClosed from "./Pages/Admin/AdminViewClosed"
@@ -90,6 +91,7 @@ const App: React.FC = () => {
       <Route path="/admin-view-pending/:ticketId" element={<AdminViewPending />} />
       <Route path="/admin-viewon/:ticketId" element={<AdminViewOngoing />} />
       <Route path="/admin-otp" element={<AdminOtp />} />
+      <Route path="/admin-add-bundle" element={<AdminAddBunldes />} />
       
 
       <Route path="/eng-login" element={<EngLogin />} />

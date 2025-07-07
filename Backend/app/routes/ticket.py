@@ -17,25 +17,25 @@ from app.models import Engineer
 from sqlalchemy import func
 from app.models import CompanySupport, SupportType
 from app.utils.email_utils import send_ticket_closed_email 
+from app.models import SRQuotaUsage, AdditionalTicketBundle
 
 ticket_bp = Blueprint("ticket", __name__, url_prefix="/api/ticket")
 
 @ticket_bp.route('sr', methods=['POST'])
 def create_service_request():
     try:
-        # Manual JWT decoding
+        # JWT Auth
         secret = current_app.config['SECRET_KEY']
-        token = request.headers.get("Authorization", None)
-        
-        if not token:
+        auth_header = request.headers.get("Authorization", None)
+
+        if not auth_header:
             return jsonify({"error": "Authorization header missing"}), 401
 
-        parts = token.split()
+        parts = auth_header.split()
         if len(parts) != 2 or parts[0].lower() != "bearer":
             return jsonify({"error": "Invalid Authorization header format"}), 401
 
         token = parts[1]
-
         try:
             decoded = jwt.decode(token, secret, algorithms=["HS256"])
         except jwt.ExpiredSignatureError:
@@ -43,7 +43,6 @@ def create_service_request():
         except jwt.InvalidTokenError:
             return jsonify({"error": "Invalid token"}), 401
 
-        # Extract user info from token
         user_name = decoded.get("name")
         user_company = decoded.get("company")
         user_email = decoded.get("email")
@@ -59,6 +58,7 @@ def create_service_request():
         if not data.get('subject') or not data.get('description') or not data.get('priority'):
             return jsonify({'error': 'Missing required fields'}), 400
 
+        # Company support info
         company_support = CompanySupport.query.filter_by(company=user_company).first()
         if not company_support:
             return jsonify({'error': 'Support type for this company is not configured.'}), 400
@@ -67,27 +67,55 @@ def create_service_request():
         if not support_type:
             return jsonify({'error': 'Invalid support type configured for company.'}), 400
 
-        ticket_limit = support_type.ticket_limit
-
+        base_ticket_limit = support_type.ticket_limit
+        current_month = datetime.utcnow().strftime('%Y-%m')
         first_day_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        # Check ticket count used
         monthly_ticket_count = db.session.query(func.count()).filter(
             Ticket.requester_company == user_company,
             Ticket.created_at >= first_day_of_month,
             Ticket.type == "Service Request"
         ).scalar()
-        
+
+        # Fetch additional bundle for the month
+        additional = AdditionalTicketBundle.query.filter_by(
+            company=user_company,
+            month=current_month
+        ).first()
+        additional_count = additional.additional_tickets if additional else 0
+
+        total_allowed_tickets = base_ticket_limit + additional_count
+
         print("==== Quota Check Debug ====")
         print(f"Company: {user_company}")
         print(f"Support Type: {company_support.support_type}")
-        print(f"Ticket Limit: {ticket_limit}")
+        print(f"Base Limit: {base_ticket_limit}")
+        print(f"Additional Tickets: {additional_count}")
+        print(f"Total Allowed: {total_allowed_tickets}")
         print(f"Used This Month: {monthly_ticket_count}")
         print("===========================")
 
-        if monthly_ticket_count >= ticket_limit:
-            return jsonify({
-                'error': f"Your Monthly Service Ticket Quota has been exceeded.Ticket creation limit reached ({ticket_limit} tickets per month for {company_support.support_type} support). Contact Administrator."
-            }), 403
-        # Create ticket object
+        # Quota exceeded
+        if monthly_ticket_count >= total_allowed_tickets:
+            quota_usage = SRQuotaUsage.query.filter_by(
+                company=user_company,
+                month=current_month
+            ).first()
+
+            if quota_usage and quota_usage.used_extra:
+                return jsonify({
+                    "error": "Your monthly SR quota including purchased bundles is exhausted, and your one-time extra SR has already been used. Contact Lanakacom Presales via 0912250764 to purchase more ticket bundles."
+                }), 403
+
+            # If client did not confirm override yet
+            if data.get("override") != "true":
+                return jsonify({
+                    "warning": "Your monthly SR quota is exhausted. You are allowed to submit ONE extra SR for this month. After this, you must purchase extra ticket bundles. Contact Lanakacom Presales via 0912250764.",
+                    "allow_override": True
+                }), 409
+
+        # Create ticket
         ticket = Ticket(
             subject=data.get('subject'),
             type="Service Request",
@@ -104,12 +132,9 @@ def create_service_request():
             engineer_contact=""
         )
 
-        # Handle file upload if present
+        # Save uploaded file
         if uploaded_file:
-            # Assuming your 'uploads' folder is at the root level next to 'app'
-            upload_dir = os.path.join(current_app.root_path, '..', 'uploads')
-            upload_dir = os.path.abspath(upload_dir)  # Make sure absolute path
-
+            upload_dir = os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads'))
             if not os.path.exists(upload_dir):
                 os.makedirs(upload_dir)
 
@@ -117,14 +142,22 @@ def create_service_request():
             upload_path = os.path.join(upload_dir, filename)
             uploaded_file.save(upload_path)
 
-            # Save relative URL path for front-end to access (relative to Flask app root)
             ticket.documents = f"uploads/{filename}"
 
-        # Save to database
+        # Save ticket
         db.session.add(ticket)
+
+        # If one-time extra SR is used now
+        if monthly_ticket_count >= total_allowed_tickets:
+            if not quota_usage:
+                quota_usage = SRQuotaUsage(company=user_company, month=current_month, used_extra=True)
+                db.session.add(quota_usage)
+            else:
+                quota_usage.used_extra = True
+
         db.session.commit()
 
-        # Import and send emails
+        # Send emails
         from app.utils.email_utils import send_sr_confirmation_email, notify_new_pending_sr_to_engineer
 
         try:
@@ -139,8 +172,7 @@ def create_service_request():
             print(f"Confirmation email sent to {user_email}")
         except Exception as e:
             print(f"Failed to send confirmation email: {str(e)}")
-            
-        
+
         engineers = Engineer.query.with_entities(Engineer.email).all()
         email_list = [eng.email for eng in engineers if eng.email]
 
@@ -158,7 +190,6 @@ def create_service_request():
         except Exception as e:
             print(f"Failed to notify engineer: {str(e)}")
 
-        # ✅ Always return a successful response if ticket is created
         return jsonify({'message': 'Service Request Created Successfully'}), 201
 
     except Exception as e:

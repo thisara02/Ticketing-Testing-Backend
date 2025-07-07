@@ -7,3 +7,5 @@ from app.models.models import OTPModel
 from app.models.models import LoginAttempt
 from app.models.models import SupportType
 from app.models.models import CompanySupport
+from app.models.models import AdditionalTicketBundle
+from app.models.models import SRQuotaUsage

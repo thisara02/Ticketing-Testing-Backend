@@ -132,3 +132,17 @@ class CompanySupport(db.Model):
     contact_person = db.Column(db.String(100), nullable=True)
     contact_mobile = db.Column(db.String(20), nullable=True)
     account_manager = db.Column(db.String(100), nullable=True)
+    
+    
+class SRQuotaUsage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    company = db.Column(db.String(100), nullable=False)
+    month = db.Column(db.String(7), nullable=False)  # Format: "YYYY-MM"
+    used_extra = db.Column(db.Boolean, default=False)
+
+class AdditionalTicketBundle(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    company = db.Column(db.String(100), nullable=False)
+    month = db.Column(db.String(7), nullable=False)  # "YYYY-MM"
+    additional_tickets = db.Column(db.Integer, default=0)
+
