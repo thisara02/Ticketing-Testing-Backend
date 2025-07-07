@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Logo from "../assets/logo.png";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { FaBell, FaBars, FaTicketAlt } from "react-icons/fa";
+import { FaBars, FaTicketAlt } from "react-icons/fa";
 // import { FaCog} from "react-icons/fa"; 
 
 interface NavbarProps {

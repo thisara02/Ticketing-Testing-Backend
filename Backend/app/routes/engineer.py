@@ -945,3 +945,93 @@ def change_password():
     db.session.commit()
 
     return jsonify({"message": "Password changed successfully"})
+
+
+@engineer_bp.route('/ontickets/<int:ticket_id>/reassign', methods=['POST'])
+def reassign_ticket(ticket_id):
+    from app.utils.email_utils import send_reassignment_email_to_engineer, notify_requester_about_reassignment
+
+    # JWT Auth
+    auth_header = request.headers.get("Authorization", None)
+    if not auth_header:
+        return jsonify({"error": "Authorization header missing"}), 401
+
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return jsonify({"error": "Invalid Authorization header format"}), 401
+
+    token = parts[1]
+    try:
+        secret = current_app.config['SECRET_KEY']
+        decoded = jwt.decode(token, secret, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Token expired"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Invalid token"}), 401
+
+    current_engineer_name = decoded.get("name")
+    data = request.get_json()
+    new_engineer_name = data.get("engineer_name")
+
+    if not new_engineer_name:
+        return jsonify({"error": "New engineer name is required"}), 400
+
+    ticket = Ticket.query.get(ticket_id)
+    if not ticket:
+        return jsonify({"error": "Ticket not found"}), 404
+
+    if ticket.engineer_name != current_engineer_name:
+        return jsonify({"error": "Only the currently assigned engineer can reassign this ticket"}), 403
+
+    if ticket.engineer_name == new_engineer_name:
+        return jsonify({"error": "Cannot reassign to the same engineer"}), 400
+
+    new_engineer = Engineer.query.filter_by(name=new_engineer_name).first()
+    if not new_engineer:
+        return jsonify({"error": "Selected engineer not found"}), 404
+
+    ticket.engineer_name = new_engineer.name
+    ticket.engineer_contact = new_engineer.mobile
+    db.session.commit()
+
+    print("[DEBUG] Ticket reassignment successful in DB.")
+    print(f"[DEBUG] New Engineer: {new_engineer.name}, Email: {new_engineer.email}")
+
+    # Send reassignment email to new engineer
+    try:
+        print("[DEBUG] Sending reassignment email to new engineer...")
+        success_eng = send_reassignment_email_to_engineer(
+            engineer_email=new_engineer.email,
+            engineer_name=new_engineer.name,
+            ticket_id=ticket.id,
+            subject=ticket.subject,
+            description=ticket.description,
+            assigned_by=current_engineer_name
+        )
+        print("[DEBUG] Email sent to engineer:", success_eng)
+    except Exception as e:
+        print("[ERROR] Failed to send email to new engineer:", str(e))
+
+    # Notify requester
+    try:
+        print("[DEBUG] Notifying requester about reassignment...")
+        success_req = notify_requester_about_reassignment(
+            user_email=ticket.requester_email,
+            user_name=ticket.requester_name,
+            ticket_id=ticket.id,
+            subject=ticket.subject,
+            new_engineer_name=new_engineer.name,
+            new_engineer_email=new_engineer.email
+        )
+        print("[DEBUG] Email sent to requester:", success_req)
+    except Exception as e:
+        print("[ERROR] Failed to send email to requester:", str(e))
+
+    return jsonify({
+        "message": f"Ticket reassigned to {new_engineer.name} successfully"
+    }), 200
+
+@engineer_bp.route('/all', methods=['GET'])
+def get_all_engineers_names():
+    engineers = Engineer.query.all()
+    return jsonify([{"name": eng.name} for eng in engineers]), 200

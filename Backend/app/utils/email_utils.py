@@ -882,5 +882,111 @@ def send_ticket_closed_email(to_email, customer_name, ticket_id, subject, closed
         return False
 
 
+def send_reassignment_email_to_engineer(engineer_email, engineer_name, ticket_id, subject, description, assigned_by):
+    """Notify the new engineer that they’ve been assigned a ticket"""
+    try:
+        msg = Message(
+            subject=f"You have been assigned to Ticket #{ticket_id:06d}",
+            recipients=[engineer_email],
+            sender=current_app.config['MAIL_DEFAULT_SENDER']
+        )
+
+        msg.html = f"""
+        <html>
+        <body style="font-family: 'Segoe UI', sans-serif; background-color: #f9f9f9; padding: 30px;">
+            <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); padding: 30px;">
+                <h2 style="color: #0F766E;">🚨 Ticket Assignment Notification</h2>
+                <p>Hello <strong>{engineer_name}</strong>,</p>
+                <p>You have been assigned a new support ticket by <strong>{assigned_by}</strong>. Here are the details:</p>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                    <tr><td><strong>🎫 Ticket ID:</strong></td><td>#{ticket_id:06d}</td></tr>
+                    <tr><td><strong>📌 Subject:</strong></td><td>{subject}</td></tr>
+                    <tr><td><strong>📝 Description:</strong></td><td>{description}</td></tr>
+                </table>
+                <p style="margin-top: 20px;">Please log into the system to start working on this ticket.</p>
+                <p style="margin-top: 30px;">Best regards,<br><strong>Cyber Security Operations Team</strong></p>
+            </div>
+        </body>
+        </html>
+        """
+
+        msg.body = f"""Dear {engineer_name},
+
+You have been assigned a new support ticket by {assigned_by}.
+
+Ticket Details:
+- Ticket ID: #{ticket_id:06d}
+- Subject: {subject}
+- Description: {description}
+
+Please log in to the system to begin working on this ticket.
+
+Best regards,
+Cyber Security Operations Team
+"""
+
+        thread = threading.Thread(target=send_async_email, args=(current_app._get_current_object(), msg))
+        thread.start()
+
+        return True
+    except Exception as e:
+        print("Error sending reassignment email to engineer:", str(e))
+        return False
+
+
+
+def notify_requester_about_reassignment(user_email, user_name, ticket_id, subject, new_engineer_name, new_engineer_email):
+    """Notify requester that the assigned engineer has changed"""
+    try:
+        msg = Message(
+            subject=f"Update on Ticket #{ticket_id:06d}: New Engineer Assigned",
+            recipients=[user_email],
+            sender=current_app.config['MAIL_DEFAULT_SENDER']
+        )
+
+        msg.html = f"""
+        <html>
+        <body style="font-family: 'Segoe UI', sans-serif; background-color: #f9f9f9; padding: 30px;">
+            <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); padding: 30px;">
+                <h2 style="color: #DC2626;">🔄 Engineer Reassignment Notice</h2>
+                <p>Hello <strong>{user_name}</strong>,</p>
+                <p>We would like to inform you that your support ticket has been reassigned. Please see the updated ticket information below:</p>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                    <tr><td><strong>🎫 Ticket ID:</strong></td><td>#{ticket_id:06d}</td></tr>
+                    <tr><td><strong>📌 Subject:</strong></td><td>{subject}</td></tr>
+                    <tr><td><strong>👨‍💻 New Engineer:</strong></td><td>{new_engineer_name}</td></tr>
+                    <tr><td><strong>✉️ Contact Email:</strong></td><td><a href="mailto:{new_engineer_email}">{new_engineer_email}</a></td></tr>
+                </table>
+                <p style="margin-top: 20px;">The new engineer will reach out to you shortly. If you have questions, feel free to reply to this email.</p>
+                <p style="margin-top: 30px;">Thank you for your cooperation,<br><strong>Cyber Security Operations Team</strong></p>
+            </div>
+        </body>
+        </html>
+        """
+
+        msg.body = f"""Dear {user_name},
+
+Your ticket has been reassigned to a new engineer.
+
+Ticket Details:
+- Ticket ID: #{ticket_id:06d}
+- Subject: {subject}
+- New Engineer: {new_engineer_name}
+- Contact Email: {new_engineer_email}
+
+The engineer will follow up with you shortly.
+
+Thank you,
+Cyber Security Operations Team
+"""
+
+        thread = threading.Thread(target=send_async_email, args=(current_app._get_current_object(), msg))
+        thread.start()
+
+        return True
+    except Exception as e:
+        print("Error sending reassignment email to requester:", str(e))
+        return False
+
 # Import datetime at the top of the file
 from datetime import datetime

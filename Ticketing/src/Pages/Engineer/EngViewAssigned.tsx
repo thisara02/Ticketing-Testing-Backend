@@ -15,7 +15,7 @@ interface Ticket {
   created_at: string;
   status: string;
   documents?: string[];
-  // engineer_name:string;
+  engineer_name:string;
   // engineer_contact:string;
 }
 
@@ -38,6 +38,9 @@ const EngViewAssigned = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [allEngineers, setAllEngineers] = useState<{ name: string }[]>([]);
+  const [selectedEngineer, setSelectedEngineer] = useState<string>("");
 
   // Check if URL is image
   const isImage = (url: string) => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
@@ -87,6 +90,24 @@ const EngViewAssigned = () => {
     const interval = setInterval(fetchTicketDetails, 1000);
     return () => clearInterval(interval);
   }, [ticketId]);
+
+  useEffect(() => {
+  const fetchEngineers = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/engineer/all");
+      const data = await res.json();
+      if (ticket?.engineer_name) {
+        setAllEngineers(data.filter((eng: any) => eng.name !== ticket.engineer_name));
+      } else {
+        setAllEngineers(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch engineers", err);
+    }
+  };
+
+  fetchEngineers();
+}, [ticket]);
 
   const handlePostComment = async () => {
     if (!commentText.trim()) return;
@@ -199,7 +220,7 @@ const EngViewAssigned = () => {
           timer: 1000,
     })
     .then(() => {
-      navigate("/eng-dash");
+      navigate("/eng-myticket");
     });// or wherever you want
   } catch (err) {
     console.error(err);
@@ -370,7 +391,85 @@ const EngViewAssigned = () => {
             </div>
           </div>
 
+          {/* Reassign Engineer Section */}
+          <div className="mt-12 bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">
+              Reassign Ticket 
+            </h2>
+
+            <div className="flex flex-col md:flex-row gap-4 items-center">
+              <select
+                value={selectedEngineer}
+                onChange={(e) => setSelectedEngineer(e.target.value)}
+                className="w-full md:w-1/2 border border-gray-300 rounded-md p-2 bg-white text-black mr-10"
+              >
+                <option value="">Select engineer</option>
+                {allEngineers.map((eng) => (
+                  <option key={eng.name} value={eng.name}>
+                    {eng.name}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                disabled={!selectedEngineer}
+                onClick={() => {
+                  Swal.fire({
+                    title: "Are you sure?",
+                    text: `You are about to reassign this ticket to ${selectedEngineer}`,
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "Yes, reassign",
+                    cancelButtonText: "Cancel",
+                    customClass: {
+                      confirmButton: 'bg-green-500 hover:bg-green-600 text-black font-semibold px-4 py-2 rounded mr-2',
+                      cancelButton: 'bg-gray-300 hover:bg-gray-400 text-black font-semibold px-4 py-2 rounded',
+                    },
+                    buttonsStyling: false, // important to allow Tailwind styles to apply
+                  })
+                  .then(async (result) => {
+                    if (result.isConfirmed) {
+                      try {
+                        const token = localStorage.getItem("engToken");
+                        const res = await fetch(`http://localhost:5000/api/engineer/ontickets/${ticketId}/reassign`, {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`,
+                          },
+                          body: JSON.stringify({ engineer_name: selectedEngineer }),
+                        });
+
+                        const data = await res.json();
+                        if (!res.ok) {
+                          Swal.fire("Failed", data.error || "Something went wrong", "error");
+                        } else {
+                          Swal.fire({
+                            icon: "success",
+                            title: "Ticket reassigned successfully!",
+                            showConfirmButton: false,
+                            timer: 1200,
+                          }).then(() => {
+                            navigate("/eng-myticket");
+                          });
+                        }
+                      } catch (err) {
+                        console.error(err);
+                        Swal.fire("Error", "Failed to reassign engineer", "error");
+                      }
+                    }
+                  });
+                }}
+                className="bg-green-500 hover:bg-green-800 text-black px-4 py-2 rounded-md transition disabled:opacity-90"
+              >
+                Reassign
+              </button>
+            </div>
+          </div>
+
+
           {/* Close Ticket Section */}
+          <div className="mt-12 bg-white p-6 rounded-lg shadow-md">
           <form
               className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12"
               onSubmit={handleCloseTicket}
@@ -414,6 +513,7 @@ const EngViewAssigned = () => {
                 </button>
               </div>
             </form>
+          </div>
         </div>
       </div>
     </div>
