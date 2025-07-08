@@ -48,6 +48,8 @@ import EngViewClosed from "./Pages/Engineer/EngViewClosed"
 import EngViewOngoing from "./Pages/Engineer/EngViewOngoing"
 import EngViewAssigned from "./Pages/Engineer/EngViewAssigned"
 import EngCustomerDetails from "./Pages/Engineer/EngCustomerDetails"
+import EngCreateSR from "./Pages/Engineer/EngCreateSR"
+import EngCreateFT from "./Pages/Engineer/EngCreateFT"
 
 
 const App: React.FC = () => {
@@ -107,6 +109,9 @@ const App: React.FC = () => {
       <Route path="/eng-viewon/:ticketId" element={<EngViewOngoing />} />
       <Route path="/eng-view-assign/:ticketId" element={<EngViewAssigned />} />
       <Route path="/eng-cus-details" element={<EngCustomerDetails />} />
+      <Route path="/eng-create-sr" element={<EngCreateSR />} />
+      <Route path="/eng-create-ft" element={<EngCreateFT />} />
+      
       
     </Routes>
     </AnimatePresence>

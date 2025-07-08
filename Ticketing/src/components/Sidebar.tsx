@@ -114,7 +114,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
 
   return (
     <aside
-      className={`bg-[#FFFF] h-screen border-r-4 border-black shadow-md transition-all duration-300 ${
+      className={`bg-[#F9FAFB] h-screen border-r-4 border-black shadow-md transition-all duration-300 ${
         isOpen ? "w-60" : "w-0 md:w-70"
       } overflow-hidden`}
     >
@@ -137,11 +137,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                 USER
               </div>
             )}
-            <p className="font-semibold text-[#000000] text-base font-jura text-center">
+            <p className="font-semibold text-[#000000] font-jura text-center text-xl">
               {customerName}
             </p>
-            <p className="text-[#000000] text-sm font-jura text-center">
-              {customerCompany}
+            <p className="text-[#372588] text-sm font-jura text-center">
+              <b>{customerCompany}</b>
             </p>
             <p className="text-[#000000] text-sm font-jura text-center">
               {customerEmail}
@@ -150,43 +150,41 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         </div>
 
         {/* Navigation Links */}
-        <nav className="space-y-7 pt-5 pl-5">
+        <nav className="space-y-3 pt-5 pl-5">
           <NavLink
             to="/home"
             className={({ isActive }) =>
-              `relative flex items-center space-x-3 text-[#000000] transition font-jura
-              hover:text-red-600 after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:bg-red-500 after:transition-all after:duration-300
-              ${isActive ? "after:w-full text-red-600" : "after:w-0 group-hover:after:w-full"}`
+              `group flex items-center space-x-3 px-4 py-2 rounded-md font-jura transition-all duration-300
+              ${isActive ? "bg-gray-200 text-black" : "text-[#092635] hover:bg-teal-100 hover:text-black"}`
             }
           >
-            <FaTachometerAlt />
-            <span>Dashboard</span>
+            <FaTachometerAlt className="transition text-xl" />
+            <span className="transition">Dashboard</span>
           </NavLink>
 
           <NavLink
             to="/pending"
             className={({ isActive }) =>
-              `relative flex items-center space-x-3 text-[#000000] transition font-jura
-              hover:text-red-600 after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:bg-red-500 after:transition-all after:duration-300
-              ${isActive ? "after:w-full text-red-600" : "after:w-0 group-hover:after:w-full"}`
+              `group flex items-center space-x-3 px-4 py-2 rounded-md font-jura transition-all duration-300
+              ${isActive ? "bg-gray-200 text-black" : "text-[#092635] hover:bg-teal-100 hover:text-black"}`
             }
           >
-            <FaTicket />
-            <span>Ongoing Requests Update</span>
+            <FaTicket className="transition text-2xl" />
+            <span className="transition">Ongoing Requests Update</span>
           </NavLink>
 
           <NavLink
             to="/history"
             className={({ isActive }) =>
-              `relative flex items-center space-x-3 text-[#000000] transition font-jura
-              hover:text-red-600 after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:bg-red-500 after:transition-all after:duration-300
-              ${isActive ? "after:w-full text-red-600" : "after:w-0 group-hover:after:w-full"}`
+              `group flex items-center space-x-3 px-4 py-2 rounded-md font-jura transition-all duration-300
+              ${isActive ? "bg-gray-200 text-black" : "text-[#092635] hover:bg-teal-100 hover:text-black"}`
             }
           >
-            <FaHistory />
-            <span>Request History</span>
+            <FaHistory className="transition text-xl" />
+            <span className="transition">Request History</span>
           </NavLink>
         </nav>
+
 
         <div className="mt-auto pt-6">
           <button

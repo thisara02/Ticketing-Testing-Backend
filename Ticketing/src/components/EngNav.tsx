@@ -1,15 +1,15 @@
-import React, { useRef } from "react";
+import React, { useState } from "react";
 import Logo from "../assets/logo.png";
-import { NavLink, useNavigate } from "react-router-dom";
-import { FaBell, FaBars } from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
+import { FaBars, FaTicketAlt } from "react-icons/fa";
 
 interface NavbarProps {
   toggleSidebar: () => void;
 }
 
 const EngNav: React.FC<NavbarProps> = ({ toggleSidebar }) => {
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const [showDropdown, setShowDropdown] = useState(false);
 
   return (
     <header className="w-full bg-[#ffffff] shadow-md flex items-center px-4 h-20 relative z-50 justify-between">
@@ -42,6 +42,33 @@ const EngNav: React.FC<NavbarProps> = ({ toggleSidebar }) => {
           <span className="absolute left-0 -bottom-1 h-0.5 bg-green-500 transition-all duration-300 w-0 group-hover:w-full"></span>
         </NavLink>
       </div> */}
+      {/* Dropdown Create SR Button */}
+        <div className="relative">
+          <button
+            onClick={() => setShowDropdown(!showDropdown)}
+            className="flex items-center gap-3 bg-[#007779] hover:bg-teal-700 text-white font-semibold py-2 px-5 rounded-lg shadow-lg transition-transform transform hover:scale-105 font-jura"
+          >
+            <FaTicketAlt className="text-2xl" />
+            Create 
+          </button>
+
+          {showDropdown && (
+            <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg z-50">
+              <Link
+                to="/eng-create-sr"
+                className="block px-4 py-2 text-green-600 hover:bg-gray-100"
+              >
+                New Service Request
+              </Link>
+              <Link
+                to="/eng-create-ft"
+                className="block px-4 py-2 text-blue-500 hover:bg-gray-100"
+              >
+                Faulty Ticket
+              </Link>
+            </div>
+          )}
+        </div>
     </header>
   );
 };

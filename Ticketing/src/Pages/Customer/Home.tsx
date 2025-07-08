@@ -46,6 +46,7 @@ const Home = () => {
     ongoing: { service: [], faulty: [] },
   });
 
+
   const [ticketCounts, setTicketCounts] = useState({
     pending: 0,
     ongoing: 0,
@@ -144,63 +145,75 @@ const Home = () => {
           <Navbar toggleSidebar={toggleSidebar} />
         </div>
 
-        <div className="flex-1 overflow-y-auto bg-[#d4e6e1]">
+        <div className="flex-1 overflow-y-auto bg-[#F9FAFB]">
           <div
-            className="w-full h-80 bg-cover bg-center relative"
+            className="w-full h-4/6 bg-cover bg-center relative"
             style={{ backgroundImage: `url(${BannerImage})` }}
           >
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex pt-20 justify-left pl-8">
-              <motion.h1
-                className="text-white text-5xl font-bold font-jura leading-tight"
-                initial={{ opacity: 0, x: -50 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.7 }}
-              >
-                Welcome to<br />
-                Lankacom Cyber Security<br />
-                Support Portal
-              </motion.h1>
-            </div>
-          </div>
+            <div className="absolute inset-0 bg-black bg-opacity-70 flex pt-10 justify-center text-center pl-8">
+              <div className="flex flex-col items-center space-y-4">
+                <motion.h1
+                  className="text-white text-5xl font-bold font-jura leading-tight"
+                  initial={{ opacity: 0, x: -50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.7 }}
+                >
+                  Welcome<br />
+                  Lankacom Cyber Security
+                  Support Portal
+                </motion.h1>
 
-          {/* Dashboard Cards */}
-          <div className="p-4 grid grid-cols-1 md:grid-cols-4 gap-8 px-20 pt-10 font-jura">
-            {[
-              {
-                label: "Current Pending Requests Count",
-                count: ticketCounts.pending,
-              },
-              {
-                label: "Current Ongoing Requests Count",
-                count: ticketCounts.ongoing,
-              },
-              {
-                label: "Balance Service Request Count (This Month)",
-                count: ticketCounts.balance_service_requests,
-              },
-              {
-                label: "Used Service Request Count (This Month)",
-                count: ticketCounts.used_service_requests,
-              },
-            ].map((item, index) => (
-              <motion.div
-                key={index}
-                variants={fadeInUp}
-                initial="hidden"
-                animate="visible"
-                className="bg-gray-200 p-8 rounded-xl shadow-lg hover:shadow-2xl cursor-default transition-shadow duration-300 text-center text-black"
-              >
-                <h2 className="text-lg font-semibold text-gray-600 mb-2">{item.label}</h2>
-                <p className="text-5xl font-bold text-gray-800">{item.count}</p>
-              </motion.div>
-            ))}
+                <motion.p
+                  className="text-white text-xl font-light max-w-2xl px-4"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8, duration: 0.6 }}
+                >
+                  Your trusted partner in cybersecurity support, delivering efficient, secure, and transparent service request management.
+                </motion.p>
+              </div>
+            </div>
+
+            <div className="p-4 grid grid-cols-1 md:grid-cols-4 gap-8 px-20 font-jura pt-72">
+              {[
+                {
+                  label: "Current Pending Requests Count",
+                  count: ticketCounts.pending,
+                },
+                {
+                  label: "Current Ongoing Requests Count",
+                  count: ticketCounts.ongoing,
+                },
+                {
+                  label: "Balance Service Request Count (This Month)",
+                  count: ticketCounts.balance_service_requests,
+                },
+                {
+                  label: "Used Service Request Count (This Month)",
+                  count: ticketCounts.used_service_requests,
+                },
+              ].map((item, index) => (
+                <motion.div
+                  key={index}
+                  variants={fadeInUp}
+                  initial="hidden"
+                  animate="visible"
+                  className={`p-8 rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 text-center cursor-default
+                    bg-white bg-opacity-20 backdrop-blur-none border border-white/30 text-white`}
+                >
+                  <h2 className="text-xl font-semibold mb-2 drop-shadow-md"><b>{item.label}</b></h2>
+                  <p className="text-5xl font-bold drop-shadow-md">{item.count}</p>
+                </motion.div>
+              ))}
+            </div>
+
           </div>
 
           {/* Ticket Sections */}
-          <div className="flex flex-col md:flex-row gap-6 px-20 mt-8 pb-10 font-jura">
+          <div className="flex flex-col md:flex-row gap-6 px-20 mt-8 pb-10 font-jura ">
             {/* Pending Tickets */}
             <div className="w-full md:w-1/2">
-              <h2 className="text-2xl font-bold text-[#000000] mb-4">Pending Requests / Issues</h2>
+              <h2 className="text-2xl font-bold text-[#0F3460] mb-4">Pending Requests / Issues</h2>
 
               <div className="flex space-x-4 mb-4">
                 <button
@@ -235,7 +248,7 @@ const Home = () => {
                         variants={fadeInUp}
                         initial="hidden"
                         animate="visible"
-                        className={`border-l-4 ${colors.borderColor} p-4 rounded shadow bg-white hover:bg-blue-50 hover:shadow-xl transition-all duration-300 ease-in-out mt-5 py-7`}
+                        className={`border-l-4 ${colors.borderColor} p-4 rounded shadow bg-gray-200 hover:bg-blue-50 hover:shadow-xl transition-all duration-300 ease-in-out mt-5 py-7`}
                       >
                         <h3 className={`flex items-center gap-2 font-semibold ${colors.textColor}`}>
                           {getIcon(ticket.type)}
@@ -255,7 +268,7 @@ const Home = () => {
 
             {/* Ongoing Tickets */}
             <div className="w-full md:w-1/2">
-              <h2 className="text-2xl font-bold text-[#000000] mb-4">Ongoing Requests / Issues</h2>
+              <h2 className="text-2xl font-bold text-[#0F3460] mb-4">Ongoing Requests / Issues</h2>
 
               <div className="flex space-x-4 mb-4">
                 <button
@@ -290,7 +303,7 @@ const Home = () => {
                         variants={fadeInUp}
                         initial="hidden"
                         animate="visible"
-                        className={`border-l-4 ${colors.borderColor} p-4 rounded shadow bg-white hover:bg-blue-50 hover:shadow-xl transition-all duration-300 ease-in-out mt-5`}
+                        className={`border-l-4 ${colors.borderColor} p-4 rounded shadow bg-gray-200 hover:bg-blue-50 hover:shadow-xl transition-all duration-300 ease-in-out mt-5`}
                       >
                         <h3 className={`flex items-center gap-2 text-lg font-semibold ${colors.textColor}`}>
                           {getIcon(ticket.type)}

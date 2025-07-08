@@ -28,7 +28,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   }, []);
 
   return (
-    <header className="w-full bg-[#ffff] shadow-md flex items-center px-4 h-20 relative z-50">
+    <header className="w-full bg-[#F9FAFB] shadow-md flex items-center px-4 h-20 relative z-50">
       {/* Left: Hamburger + Logo */}
       <div className="flex items-center space-x-3 md:space-x-4">
         <button
@@ -52,7 +52,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
             key={to}
             to={to}
             className={({ isActive }) =>
-              `relative font-medium text-[#000000] transition duration-300 pb-1
+              `relative font-medium text-[#0F3460] transition duration-300 pb-1 
               ${isActive ? "after:w-full after:scale-100" : "after:w-0 after:scale-0"}
               after:absolute after:left-0 after:-bottom-0.5 after:h-0.5 after:bg-red-500 after:transition-transform after:duration-300 after:origin-left
               hover:after:w-full hover:after:scale-100 font-jura`
@@ -93,7 +93,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
         <div className="relative">
           <button
             onClick={() => setShowDropdown(!showDropdown)}
-            className="flex items-center gap-3 bg-teal-500 hover:bg-teal-700 text-white font-semibold py-2 px-5 rounded-lg shadow-lg transition-transform transform hover:scale-105 font-jura"
+            className="flex items-center gap-3 bg-[#007779] hover:bg-teal-700 text-white font-semibold py-2 px-5 rounded-lg shadow-lg transition-transform transform hover:scale-105 font-jura"
           >
             <FaTicketAlt className="text-2xl" />
             Create 
