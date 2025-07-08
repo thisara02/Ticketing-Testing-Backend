@@ -4,7 +4,7 @@ import random
 from flask import Blueprint, app, request, jsonify, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from app.models import LoginAttempt
+from app.models import LoginAttempt,SupportType,SRQuotaUsage,AdditionalTicketBundle
 from app import db
 from app.models import Engineer
 from app.models import Customer
@@ -20,6 +20,7 @@ from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from flask import send_from_directory
 from app.utils.email_utils import send_comment_notification_to_requester
 from zoneinfo import ZoneInfo
+from sqlalchemy import func
 
 
 engineer_bp = Blueprint('engineer', __name__, url_prefix='/api/engineer')
@@ -1129,6 +1130,72 @@ def create_service_request_by_engineer():
         company_support = CompanySupport.query.filter_by(company=company).first()
         if not company_support or not company_support.support_type:
             return jsonify({'error': 'Support type for this company is not configured.'}), 400
+        
+        user_company = company
+        # Company support info
+        company_support = CompanySupport.query.filter_by(company=user_company).first()
+        if not company_support:
+            return jsonify({'error': 'Support type for this company is not configured.'}), 400
+
+        support_type = SupportType.query.filter_by(name=company_support.support_type).first()
+        if not support_type:
+            return jsonify({'error': 'Invalid support type configured for company.'}), 400
+
+        base_ticket_limit = support_type.ticket_limit
+        current_month = datetime.utcnow().strftime('%Y-%m')
+        first_day_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        # Count used service requests this month
+        monthly_ticket_count = db.session.query(func.count()).filter(
+            Ticket.requester_company == user_company,
+            Ticket.created_at >= first_day_of_month,
+            Ticket.type == "Service Request"
+        ).scalar()
+
+        # Fetch additional bundle
+        additional = AdditionalTicketBundle.query.filter_by(
+            company=user_company,
+            month=current_month
+        ).first()
+        additional_count = additional.additional_tickets if additional else 0
+
+        # Check if extra was used
+        quota_usage = SRQuotaUsage.query.filter_by(
+            company=user_company,
+            month=current_month
+        ).first()
+        extra_granted = 1 if quota_usage and quota_usage.used_extra else 0
+
+        total_allowed_tickets = base_ticket_limit + additional_count + extra_granted
+
+        print("==== Quota Check Debug ====")
+        print(f"Company: {user_company}")
+        print(f"Base Limit: {base_ticket_limit}")
+        print(f"Additional Tickets: {additional_count}")
+        print(f"Used Extra Before: {extra_granted}")
+        print(f"Used This Month: {monthly_ticket_count}")
+        print(f"Total Allowed (including extra if used): {total_allowed_tickets}")
+        print("===========================")
+
+        if monthly_ticket_count >= total_allowed_tickets:
+            # Already used all quotas including extra
+            if quota_usage and quota_usage.used_extra:
+                return jsonify({
+                    "error": "Your monthly SR quota including purchased bundles is exhausted, and your one-time extra SR has already been used. Contact Lanakacom Presales via 0912250764 to purchase more ticket bundles."
+                }), 403
+
+            # Create quota usage entry if not exists
+            if not quota_usage:
+                quota_usage = SRQuotaUsage(company=user_company, month=current_month, used_extra=False)
+                db.session.add(quota_usage)
+                db.session.commit()
+
+            # Client must confirm override
+            if data.get("override") != "true":
+                return jsonify({
+                    "warning": "Your monthly SR quota is exhausted. You are allowed to submit ONE extra SR for this month. After this, you must purchase extra ticket bundles. Contact Lanakacom Presales via 0912250764.",
+                    "allow_override": True
+                }), 409
 
         # Create the ticket
         ticket = Ticket(
@@ -1157,6 +1224,14 @@ def create_service_request_by_engineer():
             ticket.documents = f"uploads/{filename}"
 
         db.session.add(ticket)
+        
+        if monthly_ticket_count >= (base_ticket_limit + additional_count):
+            if not quota_usage:
+                quota_usage = SRQuotaUsage(company=user_company, month=current_month, used_extra=True)
+                db.session.add(quota_usage)
+            else:
+                quota_usage.used_extra = True
+                
         db.session.commit()
         
         try:

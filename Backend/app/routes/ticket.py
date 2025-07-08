@@ -203,9 +203,6 @@ def create_service_request():
         print(f"Error creating service request: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-
-    
-    
 @ticket_bp.route('ft', methods=['POST'])
 def create_faulty_ticket():
     try:
