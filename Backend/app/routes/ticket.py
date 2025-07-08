@@ -1,4 +1,5 @@
 import os
+from zoneinfo import ZoneInfo
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt, jwt_required, get_jwt_identity
 from datetime import datetime
@@ -131,7 +132,7 @@ def create_service_request():
             requester_company=user_company,
             requester_email=user_email,
             requester_contact=user_mobile,
-            created_at=datetime.utcnow(),
+            created_at = datetime.now(ZoneInfo("Asia/Colombo")),
             status="Pending",
             documents=None,
             engineer_name="",
@@ -253,7 +254,7 @@ def create_faulty_ticket():
             requester_company=user_company,
             requester_email=user_email,
             requester_contact=user_mobile,
-            created_at=datetime.utcnow(),
+            created_at = datetime.now(ZoneInfo("Asia/Colombo")),
             status="Pending",
             documents=None,
             engineer_name="",

@@ -987,6 +987,255 @@ Cyber Security Operations Team
     except Exception as e:
         print("Error sending reassignment email to requester:", str(e))
         return False
+    
+def send_ft_customer_notification_email(
+    customer_email,
+    customer_name,
+    ticket_id,
+    subject,
+    priority,
+    description,
+    status,
+    engineer_name,
+    engineer_contact,
+):
+    """Send Faulty Ticket creation notification email to customer (engineer-created)"""
+
+    try:
+        msg = Message(
+            subject="Faulty Ticket Created and Assigned",
+            recipients=[customer_email],
+            sender=current_app.config["MAIL_DEFAULT_SENDER"],
+        )
+
+        # HTML email template (matching your style)
+        msg.html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }}
+                .container {{ max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+                .header {{ background-color: #1486b8; color: white; padding: 20px; text-align: center; border-radius: 5px; margin-bottom: 20px; }}
+                .content {{ line-height: 1.6; color: #333; }}
+                .ticket-details {{ background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }}
+                .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #C70039; font-size: 12px; }}
+                .priority-critical {{ color: #dc2626; font-weight: bold; }}
+                .priority-high {{ color: #ea580c; font-weight: bold; }}
+                .priority-medium {{ color: #ca8a04; font-weight: bold; }}
+                .priority-low {{ color: #16a34a; font-weight: bold; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>Faulty Ticket Created</h1>
+                </div>
+                
+                <div class="content">
+                    <p>Dear {customer_name},</p>
+                    
+                    <p>Your Faulty Ticket has been created by our engineer and is now <strong>{status}</strong>.</p>
+                    
+                    <div class="ticket-details">
+                        <h3>Ticket Details:</h3>
+                        <p><strong>Ticket ID:</strong> FT-{ticket_id:06d}</p>
+                        <p><strong>Subject:</strong> {subject}</p>
+                        <p><strong>Description:</strong> {description}</p>
+                        <p><strong>Priority:</strong> <span class="priority-{priority.lower()}">{priority}</span></p>
+                        <p><strong>Created:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                    </div>
+
+                    <div class="ticket-details">
+                        <h3>Assigned Engineer:</h3>
+                        <p><strong>Name:</strong> {engineer_name}</p>
+                        <p><strong>Contact:</strong> {engineer_contact}</p>
+                    </div>
+                    
+                    <p>Our engineer will work on resolving your issue and keep you updated on progress.</p>
+                    
+                    <p>If you have any questions, please contact our support team.</p>
+                    
+                    <p>Thank you for your cooperation.</p>
+                    
+                    <p>Best regards,<br>
+                    <strong>Cyber Security Operations Team</strong></p>
+                    <strong>Lanka Communication Services (Pvt.) Ltd</strong>
+                </div>
+                
+                <div class="footer">
+                    <p>This is an automated message. Please do not reply to this email.</p>
+                    <p>If you need immediate assistance, please contact our support team.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        # Plain text fallback
+        msg.body = f"""
+        Dear {customer_name},
+
+        Your Faulty Ticket has been created by our engineer and is now {status}.
+
+        Ticket Details:
+        - Ticket ID: FT-{ticket_id:06d}
+        - Subject: {subject}
+        - Description: {description}
+        - Priority: {priority}
+        - Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+        Assigned Engineer:
+        - Name: {engineer_name}
+        - Contact: {engineer_contact}
+
+        Our engineer will work on resolving your issue and keep you updated on progress.
+
+        Thank you for your cooperation.
+
+        Best regards,
+        Cyber Security Operations Team
+        Lanka Communication Services (Pvt.) Ltd
+
+        ---
+        This is an automated message. Please do not reply to this email.
+        """
+
+        # Send async (assuming you have send_async_email defined like in your example)
+        thread = threading.Thread(
+            target=send_async_email,
+            args=(current_app._get_current_object(), msg),
+        )
+        thread.start()
+
+        return True
+
+    except Exception as e:
+        print(f"Failed to send engineer-created FT email: {str(e)}")
+        return False
+    
+def send_sr_customer_notification_email(
+    customer_email,
+    customer_name,
+    ticket_id,
+    subject,
+    priority,
+    description,
+    status,
+    engineer_name,
+    engineer_contact,
+):
+    """Send Service Request creation notification email to customer (engineer-created)"""
+
+    try:
+        msg = Message(
+            subject="Service Request Created & Assigned",
+            recipients=[customer_email],
+            sender=current_app.config["MAIL_DEFAULT_SENDER"],
+        )
+
+        msg.html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }}
+                .container {{ max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+                .header {{ background-color: #008080; color: white; padding: 20px; text-align: center; border-radius: 5px; margin-bottom: 20px; }}
+                .content {{ line-height: 1.6; color: #333; }}
+                .ticket-details {{ background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }}
+                .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #C70039; font-size: 12px; }}
+                .priority-critical {{ color: #dc2626; font-weight: bold; }}
+                .priority-high {{ color: #ea580c; font-weight: bold; }}
+                .priority-medium {{ color: #ca8a04; font-weight: bold; }}
+                .priority-low {{ color: #16a34a; font-weight: bold; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>Service Request Created</h1>
+                </div>
+                
+                <div class="content">
+                    <p>Dear {customer_name},</p>
+                    
+                    <p>Your Service Request has been created by our engineer and is now <strong>{status}</strong>.</p>
+                    
+                    <div class="ticket-details">
+                        <h3>Request Details:</h3>
+                        <p><strong>Request ID:</strong> SR-{ticket_id:06d}</p>
+                        <p><strong>Subject:</strong> {subject}</p>
+                        <p><strong>Description:</strong> {description}</p>
+                        <p><strong>Priority:</strong> <span class="priority-{priority.lower()}">{priority}</span></p>
+                        <p><strong>Created:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                    </div>
+
+                    <div class="ticket-details">
+                        <h3>Assigned Engineer:</h3>
+                        <p><strong>Name:</strong> {engineer_name}</p>
+                        <p><strong>Contact:</strong> {engineer_contact}</p>
+                    </div>
+                    
+                    <p>Our engineer will work on your request and keep you updated on progress.</p>
+                    
+                    <p>If you have any questions, please contact our support team.</p>
+                    
+                    <p>Thank you for your cooperation.</p>
+                    
+                    <p>Best regards,<br>
+                    <strong>Cyber Security Operations Team</strong></p>
+                    <strong>Lanka Communication Services (Pvt.) Ltd</strong>
+                </div>
+                
+                <div class="footer">
+                    <p>This is an automated message. Please do not reply to this email.</p>
+                    <p>If you need immediate assistance, please contact our support team.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        msg.body = f"""
+        Dear {customer_name},
+
+        Your Service Request has been created by our engineer and is now {status}.
+
+        Request Details:
+        - Request ID: SR-{ticket_id:06d}
+        - Subject: {subject}
+        - Description: {description}
+        - Priority: {priority}
+        - Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+        Assigned Engineer:
+        - Name: {engineer_name}
+        - Contact: {engineer_contact}
+
+        Our engineer will work on your request and keep you updated on progress.
+
+        Thank you for your cooperation.
+
+        Best regards,
+        Cyber Security Operations Team
+        Lanka Communication Services (Pvt.) Ltd
+
+        ---
+        This is an automated message. Please do not reply to this email.
+        """
+
+        thread = threading.Thread(
+            target=send_async_email,
+            args=(current_app._get_current_object(), msg),
+        )
+        thread.start()
+
+        return True
+
+    except Exception as e:
+        print(f"Failed to send engineer-created SR email: {str(e)}")
+        return False
 
 # Import datetime at the top of the file
 from datetime import datetime

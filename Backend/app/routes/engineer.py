@@ -9,16 +9,17 @@ from app import db
 from app.models import Engineer
 from app.models import Customer
 from app.models import Ticket
-from app.models import Comment
+from app.models import Comment,CompanySupport
 from datetime import datetime, timedelta, timezone
 import pytz
 import jwt
 from flask_cors import cross_origin
 from app.models import OTPModel
-from app.utils.email_utils import send_otp_email
+from app.utils.email_utils import send_ft_customer_notification_email, send_otp_email, send_sr_customer_notification_email
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from flask import send_from_directory
 from app.utils.email_utils import send_comment_notification_to_requester
+from zoneinfo import ZoneInfo
 
 
 engineer_bp = Blueprint('engineer', __name__, url_prefix='/api/engineer')
@@ -1035,3 +1036,238 @@ def reassign_ticket(ticket_id):
 def get_all_engineers_names():
     engineers = Engineer.query.all()
     return jsonify([{"name": eng.name} for eng in engineers]), 200
+
+
+# Get all companies
+@engineer_bp.route('/companies', methods=['GET'])
+def get_companies():
+    companies = CompanySupport.query.all()
+    return jsonify([{"label": c.company, "value": c.company} for c in companies]), 200
+
+# Get customers for a selected company
+@engineer_bp.route('/customers/<company>', methods=['GET'])
+def get_customers_by_company(company):
+    customers = Customer.query.filter_by(company=company).all()
+    return jsonify([
+        {
+            "id": c.id,
+            "label": c.name,
+            "value": c.name,
+            "email": c.email,
+            "designation": c.designation,
+            "mobile": c.mobile
+        }
+        for c in customers
+    ]), 200
+
+@engineer_bp.route('/me', methods=['GET'])
+def get_engineer_info():
+    auth_header = request.headers.get('Authorization', None)
+    if not auth_header:
+        return jsonify({"error": "Authorization header missing"}), 401
+
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return jsonify({"error": "Invalid Authorization header format"}), 401
+
+    token = parts[1]
+
+    try:
+        payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Token expired"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Invalid token"}), 401
+
+    engineer_email = payload.get("email")
+    if not engineer_email:
+        return jsonify({"error": "Email missing from token"}), 400
+
+    engineer = Engineer.query.filter_by(email=engineer_email).first()
+    if not engineer:
+        return jsonify({"error": "Engineer not found"}), 404
+
+    return jsonify({
+        "name": engineer.name,
+        "contact": engineer.mobile
+    }), 200
+
+
+@engineer_bp.route('/create-sr', methods=['POST'])
+def create_service_request_by_engineer():
+    try:
+        # JWT check (engineer)
+        auth_header = request.headers.get("Authorization", None)
+        if not auth_header:
+            return jsonify({"error": "Authorization header missing"}), 401
+
+        parts = auth_header.split()
+        if len(parts) != 2 or parts[0].lower() != "bearer":
+            return jsonify({"error": "Invalid Authorization header format"}), 401
+
+        token = parts[1]
+        try:
+            decoded = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            return jsonify({"error": "Token expired"}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid token"}), 401
+
+        engineer_email = decoded.get("email")
+
+        # Extract form data
+        data = request.form
+        uploaded_file = request.files.get('document')
+
+        required_fields = ['requester_company', 'requester_name', 'requester_email',
+                           'requester_contact', 'subject', 'description', 'priority',
+                           'engineer_name', 'engineer_contact']
+        if not all(data.get(f) for f in required_fields):
+            return jsonify({'error': 'Missing required fields'}), 400
+
+        company = data.get("requester_company")
+        company_support = CompanySupport.query.filter_by(company=company).first()
+        if not company_support or not company_support.support_type:
+            return jsonify({'error': 'Support type for this company is not configured.'}), 400
+
+        # Create the ticket
+        ticket = Ticket(
+            subject=data.get('subject'),
+            type="Service Request",
+            description=data.get('description'),
+            priority=data.get('priority'),
+            requester_name=data.get('requester_name'),
+            requester_company=company,
+            requester_email=data.get('requester_email'),
+            requester_contact=data.get('requester_contact'),
+            created_at = datetime.now(ZoneInfo("Asia/Colombo")),
+            status="Ongoing",
+            engineer_name=data.get('engineer_name'),
+            engineer_contact=data.get('engineer_contact')
+        )
+
+        # Save document if present
+        if uploaded_file:
+            upload_dir = os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads'))
+            os.makedirs(upload_dir, exist_ok=True)
+
+            filename = secure_filename(uploaded_file.filename)
+            file_path = os.path.join(upload_dir, filename)
+            uploaded_file.save(file_path)
+            ticket.documents = f"uploads/{filename}"
+
+        db.session.add(ticket)
+        db.session.commit()
+        
+        try:
+            send_sr_customer_notification_email(
+                customer_email=ticket.requester_email,
+                customer_name=ticket.requester_name,
+                ticket_id=ticket.id,
+                subject=ticket.subject,
+                priority=ticket.priority,
+                description=ticket.description,
+                status=ticket.status,
+                engineer_name=ticket.engineer_name,
+                engineer_contact=ticket.engineer_contact,
+            )
+        except Exception as e:
+            print(f"Failed to send email notification: {str(e)}")
+
+        return jsonify({'message': 'Service Request created successfully.'}), 201
+
+    except Exception as e:
+        print("Error in engineer SR route:", str(e))
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+@engineer_bp.route("/ft", methods=["POST"])
+def create_faulty_ticket():
+    try:
+        secret = current_app.config["SECRET_KEY"]
+        auth_header = request.headers.get("Authorization", None)
+        if not auth_header:
+            return jsonify({"error": "Authorization header missing"}), 401
+
+        parts = auth_header.split()
+        if len(parts) != 2 or parts[0].lower() != "bearer":
+            return jsonify({"error": "Invalid Authorization header format"}), 401
+
+        token = parts[1]
+        try:
+            decoded = jwt.decode(token, secret, algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            return jsonify({"error": "Token expired"}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid token"}), 401
+
+        # Engineer info from token
+        engineer_name = decoded.get("name")
+        engineer_contact = decoded.get("mobile")
+
+        data = request.form
+        uploaded_file = request.files.get("document")
+
+        required_fields = [
+            "subject",
+            "description",
+            "priority",
+            "requester_name",
+            "requester_email",
+            "requester_company",
+            "requester_contact",
+        ]
+        if not all(data.get(field) for field in required_fields):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        ticket = Ticket(
+            subject=data.get("subject"),
+            type="Faulty Ticket",
+            description=data.get("description"),
+            priority=data.get("priority"),
+            requester_name=data.get("requester_name"),
+            requester_email=data.get("requester_email"),
+            requester_company=data.get("requester_company"),
+            requester_contact=data.get("requester_contact"),
+            created_at = datetime.now(ZoneInfo("Asia/Colombo")),
+            status="Ongoing",
+            engineer_name=engineer_name,
+            engineer_contact=engineer_contact,
+            documents=None,
+        )
+
+        if uploaded_file:
+            upload_dir = "uploads"
+            if not os.path.exists(upload_dir):
+                os.makedirs(upload_dir)
+
+            filename = uploaded_file.filename
+            filepath = os.path.join(upload_dir, filename)
+            uploaded_file.save(filepath)
+            ticket.documents = filepath
+
+        db.session.add(ticket)
+        db.session.commit()
+        
+        try:
+            send_ft_customer_notification_email(
+                customer_email=ticket.requester_email,
+                customer_name=ticket.requester_name,
+                ticket_id=ticket.id,
+                subject=ticket.subject,
+                description=ticket.description,
+                priority=ticket.priority,
+                status=ticket.status,
+                engineer_name=engineer_name,
+                engineer_contact=engineer_contact,
+            )
+        except Exception as e:
+            print(f"Failed to send email notification: {str(e)}")
+
+        # <-- Add this return statement
+        return jsonify({"message": "Faulty Ticket Created by Engineer"}), 201
+
+    except Exception as e:
+        print(f"Error creating FT by engineer: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
