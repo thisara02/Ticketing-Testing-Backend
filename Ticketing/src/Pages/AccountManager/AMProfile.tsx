@@ -1,19 +1,19 @@
 import { useRef, useState, useEffect } from "react";
-import Sidebar from "../../components/EngSide";
-import Navbar from "../../components/EngNav";
+import Navbar from "../../components/AmNav";
 import { FaCamera } from "react-icons/fa";
 import Swal from "sweetalert2";
+
 
 const AMProfile = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
 
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     mobile: "",
-    designation: "",
   });
 
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
@@ -31,7 +31,7 @@ const AMProfile = () => {
 
   // Update the useEffect to handle the full URL properly
 useEffect(() => {
-  const token = localStorage.getItem("engToken");
+  const token = localStorage.getItem("amToken");
   if (!token) {
     Swal.fire("Error", "Authentication token missing. Please login again.", "error");
     return;
@@ -39,7 +39,7 @@ useEffect(() => {
 
   const baseUrl = "http://localhost:5000";
 
-  fetch(`${baseUrl}/api/engineer/profile`, {
+  fetch(`${baseUrl}/api/accountmanager/profile`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -58,7 +58,6 @@ useEffect(() => {
         name: data.name || "",
         email: data.email || "",
         mobile: data.mobile || "",
-        designation: data.designation || "",
       });
 
       if (data.profile_image) {
@@ -122,7 +121,7 @@ useEffect(() => {
   };
 
   const saveProfile = async () => {
-  const token = localStorage.getItem("engToken");
+  const token = localStorage.getItem("amToken");
   if (!token) {
     Swal.fire("Error", "Authentication token missing. Please login again.", "error");
     return;
@@ -131,11 +130,10 @@ useEffect(() => {
   try {
     const formPayload = new FormData();
     formPayload.append("name", formData.name);
-    formPayload.append("mobilep", formData.mobile); // backend expects "mobilep"
-    formPayload.append("designation", formData.designation);
+    formPayload.append("mobile", formData.mobile); // backend expects "mobilep");
     if (profileImageFile) formPayload.append("profile_image", profileImageFile);
 
-    const res = await fetch("http://localhost:5000/api/engineer/profile", {
+    const res = await fetch("http://localhost:5000/api/accountmanager/profile", {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -161,7 +159,14 @@ useEffect(() => {
       fileInputRef.current.value = '';
     }
 
-    Swal.fire("Success", "Your profile changes have been saved successfully", "success");
+    Swal.fire({
+  title: "Success",
+  text: "Your profile changes have been saved successfully",
+  icon: "success",
+  showConfirmButton: false,
+  timer: 1000,
+  timerProgressBar: true,
+});
   } catch (error: any) {
     Swal.fire("Error", error.message || "Failed to save profile", "error");
   }
@@ -173,14 +178,14 @@ useEffect(() => {
       return;
     }
 
-    const token = localStorage.getItem("engToken");
+    const token = localStorage.getItem("amToken");
     if (!token) {
       Swal.fire("Error", "Authentication token missing. Please login again.", "error");
       return;
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/engineer/change-password", {
+      const res = await fetch("http://localhost:5000/api/accountmanager/change-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -204,9 +209,6 @@ useEffect(() => {
 
   return (
     <div className="h-screen w-screen flex overflow-hidden">
-      <div className="flex-shrink-0">
-        <Sidebar isOpen={isSidebarOpen} />
-      </div>
 
       <div className="flex-1 flex flex-col h-screen min-h-0">
         <Navbar toggleSidebar={toggleSidebar} />
@@ -278,17 +280,6 @@ useEffect(() => {
                   type="text"
                   name="mobile"
                   value={formData.mobile}
-                  onChange={handleChange}
-                  className="mt-1 w-full border border-gray-300 rounded px-3 py-2 bg-white text-black font-jura"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 font-jura">Designation</label>
-                <input
-                  type="text"
-                  name="designation"
-                  value={formData.designation}
                   onChange={handleChange}
                   className="mt-1 w-full border border-gray-300 rounded px-3 py-2 bg-white text-black font-jura"
                 />

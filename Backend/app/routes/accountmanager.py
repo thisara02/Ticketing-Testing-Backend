@@ -328,7 +328,7 @@ def am_update_profile():
     try:
         data = request.form
         name = data.get("name")
-        mobile = data.get("mobilep")
+        mobile = data.get("mobile")
 
         if not name or not mobile:
             return jsonify({"error": "Missing required fields"}), 400
@@ -470,3 +470,48 @@ def am_change_password():
     db.session.commit()
 
     return jsonify({"message": "Password changed successfully"})
+
+
+@accountmanager_bp.route('customers', methods=['GET', 'OPTIONS'])
+def get_account_manager_customers():
+    if request.method == 'OPTIONS':
+        return '', 200
+    auth_header = request.headers.get("Authorization", None)
+    if not auth_header:
+        return jsonify({"error": "Authorization header missing"}), 401
+
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return jsonify({"error": "Invalid authorization format"}), 401
+
+    token = parts[1]
+
+    try:
+        decoded = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
+        account_manager_name = decoded.get("name")
+
+        if not account_manager_name:
+            return jsonify({"error": "Account Manager name not found in token"}), 400
+
+        companies = CompanySupport.query.filter_by(account_manager=account_manager_name).all()
+
+        results = [
+            {
+                "id": c.id,
+                "name": c.company,
+                "support_type": c.support_type,
+                "location": c.location,
+                "contact_person": c.contact_person,
+                "contact_mobile": c.contact_mobile,
+            }
+            for c in companies
+        ]
+
+        return jsonify(results), 200
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Token expired"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Invalid token"}), 401
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
