@@ -51,6 +51,11 @@ import EngViewAssigned from "./Pages/Engineer/EngViewAssigned"
 import EngCustomerDetails from "./Pages/Engineer/EngCustomerDetails"
 import EngCreateSR from "./Pages/Engineer/EngCreateSR"
 import EngCreateFT from "./Pages/Engineer/EngCreateFT"
+import AMProfile from "./Pages/AccountManager/AMProfile"
+import AMForgotPass from "./Pages/AccountManager/AMForgotPassword"
+import AMResetPass from "./Pages/AccountManager/AMResetPassword"
+import AMDash from "./Pages/AccountManager/AMDashboard"
+import AMLogin from "./Pages/AccountManager/AMLogin"
 
 
 const App: React.FC = () => {
@@ -114,6 +119,12 @@ const App: React.FC = () => {
       <Route path="/eng-create-sr" element={<EngCreateSR />} />
       <Route path="/eng-create-ft" element={<EngCreateFT />} />
       
+      <Route path="/am-login" element={<AMLogin />} />
+      <Route path="/am-dash" element={<AMDash />} />
+      <Route path="/am-forgot" element={<AMForgotPass />} />
+      <Route path="/am-reset" element={<AMResetPass />} />
+      <Route path="/am-profile" element={<AMProfile />} />
+
       
     </Routes>
     </AnimatePresence>
