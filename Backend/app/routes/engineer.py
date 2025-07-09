@@ -1153,11 +1153,14 @@ def create_service_request_by_engineer():
         ).scalar()
 
         # Fetch additional bundle
-        additional = AdditionalTicketBundle.query.filter_by(
-            company=user_company,
-            month=current_month
-        ).first()
-        additional_count = additional.additional_tickets if additional else 0
+        # Bundle tickets
+        manual_bundles = db.session.query(func.sum(AdditionalTicketBundle.additional_tickets)).filter_by(
+            company=user_company, month=current_month, source="manual"
+        ).scalar() or 0
+
+        carry_bundles = db.session.query(func.sum(AdditionalTicketBundle.additional_tickets)).filter_by(
+            company=user_company, month=current_month, source="carry"
+        ).scalar() or 0
 
         # Check if extra was used
         quota_usage = SRQuotaUsage.query.filter_by(
@@ -1166,15 +1169,16 @@ def create_service_request_by_engineer():
         ).first()
         extra_granted = 1 if quota_usage and quota_usage.used_extra else 0
 
-        total_allowed_tickets = base_ticket_limit + additional_count + extra_granted
+        total_allowed_tickets = base_ticket_limit + manual_bundles + carry_bundles + extra_granted
 
         print("==== Quota Check Debug ====")
         print(f"Company: {user_company}")
         print(f"Base Limit: {base_ticket_limit}")
-        print(f"Additional Tickets: {additional_count}")
+        print(f"Manual Tickets: {manual_bundles}")
+        print(f"Carry-forward: {carry_bundles}")
         print(f"Used Extra Before: {extra_granted}")
         print(f"Used This Month: {monthly_ticket_count}")
-        print(f"Total Allowed (including extra if used): {total_allowed_tickets}")
+        print(f"Total Allowed: {total_allowed_tickets}")
         print("===========================")
 
         if monthly_ticket_count >= total_allowed_tickets:
@@ -1225,7 +1229,7 @@ def create_service_request_by_engineer():
 
         db.session.add(ticket)
         
-        if monthly_ticket_count >= (base_ticket_limit + additional_count):
+        if monthly_ticket_count >= (base_ticket_limit + manual_bundles + carry_bundles):
             if not quota_usage:
                 quota_usage = SRQuotaUsage(company=user_company, month=current_month, used_extra=True)
                 db.session.add(quota_usage)

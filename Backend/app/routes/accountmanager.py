@@ -787,14 +787,17 @@ def get_company_details(company_name):
         if not company:
             return jsonify({"error": "Company not found"}), 404
 
-        # Get bundle history, newest first
-        bundles = AdditionalTicketBundle.query.filter_by(company=company_name).order_by(AdditionalTicketBundle.month.desc()).all()
+        # ❗️Get only MANUAL bundles (not carry-forwards)
+        bundles = AdditionalTicketBundle.query.filter_by(
+            company=company_name,
+            source="manual"
+        ).order_by(AdditionalTicketBundle.month.desc()).all()
 
         bundle_data = [
             {
                 "month": b.month,
                 "additional_tickets": b.additional_tickets,
-                "created_at": b.created_at.strftime("%Y-%m-%d %H:%M:%S") if b.created_at else None  # formatted
+                "created_at": b.created_at.strftime("%Y-%m-%d %H:%M:%S") if b.created_at else None
             }
             for b in bundles
         ]

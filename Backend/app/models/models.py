@@ -145,6 +145,7 @@ class AdditionalTicketBundle(db.Model):
     company = db.Column(db.String(100), nullable=False)
     month = db.Column(db.String(7), nullable=False)  # "YYYY-MM"
     additional_tickets = db.Column(db.Integer, default=0)
+    source = db.Column(db.String(20), nullable=False, default="manual")  # NEW FIELD
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class AccountManager(db.Model):

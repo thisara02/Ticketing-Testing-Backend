@@ -348,9 +348,10 @@ def get_ticket_counts():
         decoded = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
         user_company = decoded.get("company")
 
-        # Monthly values
-        current_month = datetime.utcnow().strftime("%Y-%m")
-        first_day = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        # Dates
+        now = datetime.utcnow()
+        current_month = now.strftime("%Y-%m")
+        first_day = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
         # Ticket counts
         pending = Ticket.query.filter_by(requester_company=user_company, status="Pending").count()
@@ -361,51 +362,55 @@ def get_ticket_counts():
             Ticket.type == "Service Request"
         ).count()
 
-        # Limits from support + bundle
+        # Support base limit
         company_support = CompanySupport.query.filter_by(company=user_company).first()
         support_type = SupportType.query.filter_by(name=company_support.support_type).first()
         default_limit = support_type.ticket_limit
 
-        bundle_total = db.session.query(func.sum(AdditionalTicketBundle.additional_tickets))\
-            .filter_by(company=user_company, month=current_month)\
-            .scalar() or 0
-            
+        # --- Manual bundles ---
+        manual_bundles = db.session.query(func.sum(AdditionalTicketBundle.additional_tickets)).filter_by(
+            company=user_company,
+            month=current_month,
+            source="manual"
+        ).scalar() or 0
+
+        # --- Carry-forward bundles ---
+        carry_bundles = db.session.query(func.sum(AdditionalTicketBundle.additional_tickets)).filter_by(
+            company=user_company,
+            month=current_month,
+            source="carry"
+        ).scalar() or 0
+
+        # Extra ticket usage
         quota_usage = SRQuotaUsage.query.filter_by(company=user_company, month=current_month).first()
         extra_granted = 1 if quota_usage and quota_usage.used_extra else 0
 
-        total_limit = default_limit + bundle_total + extra_granted
+        # Total for functional limit (all-inclusive)
+        total_limit = default_limit + manual_bundles + carry_bundles + extra_granted
         balance_service_requests = max(0, total_limit - used_service_requests)
-        
+
+        # Additional usage calc
         used_additional = used_service_requests - default_limit
         if quota_usage and quota_usage.used_extra:
             used_additional -= 1
         used_additional = max(0, used_additional)
 
-        # Calculate remaining
-        remaining_additional = bundle_total - used_additional
+        remaining_additional = (manual_bundles + carry_bundles) - used_additional
         remaining_additional = max(0, remaining_additional)
 
-        # ✅ Print to console
-        print("=== Additional Ticket Usage Debug ===")
-        print(f"Used Additional Tickets: {used_additional}")
-        print(f"Total Additional Tickets This Month: {bundle_total}")
-        print(f"Remaining Additional Tickets: {remaining_additional}")
-        print("=====================================")
-        
-        # --- Carry Forward Logic ---
+        # ✅ Carry forward logic (if carry bundle doesn't already exist)
         from sqlalchemy import and_
-
-        # Dates
-        now = datetime.utcnow()
-        current_month = now.strftime("%Y-%m")
         prev_month_date = now.replace(day=1) - timedelta(days=1)
         prev_month = prev_month_date.strftime("%Y-%m")
 
-        # Check if current month bundle already exists
-        existing_bundle = AdditionalTicketBundle.query.filter_by(company=user_company, month=current_month).first()
+        # Only run carry logic if not already carried
+        existing_carry = AdditionalTicketBundle.query.filter_by(
+            company=user_company,
+            month=current_month,
+            source="carry"
+        ).first()
 
-        if not existing_bundle:
-            # Calculate used_additional from previous month
+        if not existing_carry:
             prev_first_day = prev_month_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             prev_last_day = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
@@ -416,35 +421,48 @@ def get_ticket_counts():
                 Ticket.type == "Service Request"
             ).count()
 
-            prev_support = CompanySupport.query.filter_by(company=user_company).first()
-            prev_support_type = SupportType.query.filter_by(name=prev_support.support_type).first()
+            prev_support_type = SupportType.query.filter_by(name=company_support.support_type).first()
             prev_limit = prev_support_type.ticket_limit
 
-            prev_bundle_total = db.session.query(func.sum(AdditionalTicketBundle.additional_tickets))\
-                .filter_by(company=user_company, month=prev_month)\
+            prev_manual_total = db.session.query(func.sum(AdditionalTicketBundle.additional_tickets))\
+                .filter_by(company=user_company, month=prev_month, source="manual")\
                 .scalar() or 0
 
+            prev_extra_used = 0
             prev_quota = SRQuotaUsage.query.filter_by(company=user_company, month=prev_month).first()
-            prev_extra_used = 1 if prev_quota and prev_quota.used_extra else 0
+            if prev_quota and prev_quota.used_extra:
+                prev_extra_used = 1
 
             prev_used_additional = prev_used_service_requests - prev_limit
             if prev_extra_used:
                 prev_used_additional -= 1
             prev_used_additional = max(0, prev_used_additional)
 
-            prev_remaining_additional = max(0, prev_bundle_total - prev_used_additional)
+            prev_remaining_additional = max(0, prev_manual_total - prev_used_additional)
 
-            # Create carry-forward bundle
+            # Insert carry-forward record
             if prev_remaining_additional > 0:
                 carry = AdditionalTicketBundle(
                     company=user_company,
                     month=current_month,
-                    additional_tickets=prev_remaining_additional
+                    additional_tickets=prev_remaining_additional,
+                    source="carry"
                 )
                 db.session.add(carry)
                 db.session.commit()
-                print(f"[Carry Forward] {prev_remaining_additional} additional tickets carried to {current_month}")
+                print(f"[Carry Forward] {prev_remaining_additional} tickets carried to {current_month}")
 
+        # ✅ Debug info
+        print("=== Additional Ticket Usage Debug ===")
+        print(f"Used This Month: {used_service_requests}")
+        print(f"Default Limit: {default_limit}")
+        print(f"Manual Bundles: {manual_bundles}")
+        print(f"Carry-forward Bundles: {carry_bundles}")
+        print(f"Extra Granted: {extra_granted}")
+        print(f"Used Additional: {used_additional}")
+        print(f"Remaining Additional Tickets: {remaining_additional}")
+        print(f"Balance SRs: {balance_service_requests}")
+        print("=====================================")
 
         return jsonify({
             "pending": pending,
@@ -456,7 +474,6 @@ def get_ticket_counts():
     except Exception as e:
         print("Ticket count error:", str(e))
         return jsonify({"error": str(e)}), 500
-
 
 @customer_bp.route('/tickets/<int:ticket_id>', methods=['GET'])
 def get_customer_ticket_details(ticket_id):

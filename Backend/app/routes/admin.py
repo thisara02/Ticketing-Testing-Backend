@@ -753,23 +753,27 @@ def add_additional_bundle():
         return jsonify({'error': 'Missing required fields'}), 400
 
     try:
-        # Step 1: Upsert bundle
-        bundle = AdditionalTicketBundle.query.filter_by(company=company, month=month).first()
-        if bundle:
-            bundle.additional_tickets += tickets
-        else:
-            bundle = AdditionalTicketBundle(company=company, month=month, additional_tickets=tickets)
-            db.session.add(bundle)
+        # ✅ Step 1: Only update/add bundles with source="manual"
+        # ✅ Always create new entry for every admin-added bundle
+        bundle = AdditionalTicketBundle(
+            company=company,
+            month=month,
+            additional_tickets=tickets,
+            source="manual"
+        )
+        db.session.add(bundle)
+
+
         db.session.commit()
 
-        # Step 2: Lookup account manager from company
+        # ✅ Step 2: Lookup account manager from company
         company_record = CompanySupport.query.filter_by(company=company).first()
         if company_record and company_record.account_manager:
             am_name = company_record.account_manager
             account_manager = AccountManager.query.filter_by(name=am_name).first()
 
             if account_manager:
-                # Step 3: Send email notification
+                # ✅ Step 3: Send email notification
                 send_bundle_notification_to_am(
                     am_email=account_manager.email,
                     am_name=account_manager.name,
@@ -783,3 +787,4 @@ def add_additional_bundle():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
