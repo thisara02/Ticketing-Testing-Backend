@@ -56,6 +56,10 @@ import AMForgotPass from "./Pages/AccountManager/AMForgotPassword"
 import AMResetPass from "./Pages/AccountManager/AMResetPassword"
 import AMDash from "./Pages/AccountManager/AMDashboard"
 import AMLogin from "./Pages/AccountManager/AMLogin"
+import AMTickets from "./Pages/AccountManager/AMTickets"
+import AMViewPending from "./Pages/AccountManager/AMViewPending"
+import AMViewClosed from "./Pages/AccountManager/AMViewClosed"
+import AMViewOngoing from "./Pages/AccountManager/AMViewOngoing"
 
 
 const App: React.FC = () => {
@@ -124,7 +128,10 @@ const App: React.FC = () => {
       <Route path="/am-forgot" element={<AMForgotPass />} />
       <Route path="/am-reset" element={<AMResetPass />} />
       <Route path="/am-profile" element={<AMProfile />} />
-
+      <Route path="/am-tickets" element={<AMTickets />} />
+      <Route path="/am-view-closed/:ticketId" element={<AMViewClosed />} />
+      <Route path="/am-view-pending/:ticketId" element={<AMViewPending />} />
+      <Route path="/am-viewon/:ticketId" element={<AMViewOngoing />} />
       
     </Routes>
     </AnimatePresence>

@@ -8,6 +8,7 @@ from app.models import Ticket
 from app.models import AccountManager
 from app.models import CompanySupport
 import jwt
+from app.models import Comment
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash
 import random
@@ -515,3 +516,233 @@ def get_account_manager_customers():
         return jsonify({"error": "Invalid token"}), 401
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+    
+@accountmanager_bp.route("/tickets", methods=["GET"])
+def get_tickets_for_account_manager():
+    auth_header = request.headers.get("Authorization", None)
+    if not auth_header:
+        return jsonify({"error": "Authorization header missing"}), 401
+
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return jsonify({"error": "Invalid authorization format"}), 401
+
+    token = parts[1]
+
+    try:
+        decoded = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
+        account_manager_name = decoded.get("name")
+        if not account_manager_name:
+            return jsonify({"error": "Account Manager name not found in token"}), 400
+
+        # Get all companies managed by this AM
+        companies = CompanySupport.query.filter_by(account_manager=account_manager_name).all()
+        company_names = [c.company for c in companies]
+
+        if not company_names:
+            return jsonify([]), 200  # No companies managed
+
+        # Get all tickets for those companies
+        tickets = Ticket.query.filter(Ticket.requester_company.in_(company_names)).all()
+
+        results = [
+            {
+                "id": t.id,
+                "subject": t.subject,
+                "type": t.type,
+                "priority": t.priority,
+                "requester_company": t.requester_company,
+                "status": t.status,
+                "created_at": t.created_at.strftime("%Y-%m-%d %H:%M"),
+                "closed_at": t.closed_at.strftime("%Y-%m-%d %H:%M") if t.closed_at else None,
+                "engineer_name": t.engineer_name,
+            }
+            for t in tickets
+        ]
+
+        return jsonify(results), 200
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Token expired"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Invalid token"}), 401
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@accountmanager_bp.route('/closetickets/<int:ticket_id>', methods=['GET'])
+def get_accountmanager_closeticket_details(ticket_id):
+    auth_header = request.headers.get("Authorization", None)
+    if not auth_header:
+        return jsonify({"error": "Authorization header missing"}), 401
+
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return jsonify({"error": "Invalid Authorization header format"}), 401
+
+    token = parts[1]
+    try:
+        secret = current_app.config['SECRET_KEY']
+        decoded = jwt.decode(token, secret, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Token expired"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Invalid token"}), 401
+
+    # Query the specific ticket for this company
+    ticket = Ticket.query.filter(
+        Ticket.id == ticket_id,
+    ).first()
+
+    if not ticket:
+        return jsonify({"error": "Ticket not found or access denied"}), 404
+
+    # Get comments for this ticket
+    comments = Comment.query.filter(Comment.ticket_id == ticket_id).order_by(Comment.timestamp.asc()).all()
+    comments_data = [{
+        "id": c.id,
+        "author": c.author_name,
+        "timestamp": c.timestamp.isoformat(),
+        "content": c.message,
+        "role": c.author_role
+    } for c in comments]
+
+    ticket_data = {
+        "id": ticket.id,
+        "subject": ticket.subject,
+        "type": ticket.type,
+        "description": ticket.description,
+        "requester_company":ticket.requester_company,
+        "requester_name": ticket.requester_name,
+        "requester_email": ticket.requester_email,
+        "requester_contact": ticket.requester_contact,
+        "created_at": ticket.created_at.isoformat() if ticket.created_at else None,
+        "engineer_name":ticket.engineer_name,
+        "engineer_contact":ticket.engineer_contact,
+        "status": ticket.status,
+        "documents": [ticket.documents] if ticket.documents else [],
+        "work_done_comment":ticket.work_done_comment,
+        "rectification_date":ticket.rectification_date.isoformat() if ticket.rectification_date else None,
+        "closed_at": ticket.closed_at.isoformat() if ticket.closed_at else None,
+    }
+
+    return jsonify({
+        "ticket": ticket_data,
+        "comments": comments_data
+    })
+    
+@accountmanager_bp.route('/ontickets/<int:ticket_id>', methods=['GET'])
+def get_accountmanager_onticket_details(ticket_id):
+    auth_header = request.headers.get("Authorization", None)
+    if not auth_header:
+        return jsonify({"error": "Authorization header missing"}), 401
+
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return jsonify({"error": "Invalid Authorization header format"}), 401
+
+    token = parts[1]
+    try:
+        secret = current_app.config['SECRET_KEY']
+        decoded = jwt.decode(token, secret, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Token expired"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Invalid token"}), 401
+
+    # Query the specific ticket for this company
+    ticket = Ticket.query.filter(
+        Ticket.id == ticket_id,
+    ).first()
+
+    if not ticket:
+        return jsonify({"error": "Ticket not found or access denied"}), 404
+
+    # Get comments for this ticket
+    comments = Comment.query.filter(Comment.ticket_id == ticket_id).order_by(Comment.timestamp.asc()).all()
+    comments_data = [{
+        "id": c.id,
+        "author": c.author_name,
+        "timestamp": c.timestamp.isoformat(),
+        "content": c.message,
+        "role": c.author_role
+    } for c in comments]
+
+    ticket_data = {
+        "id": ticket.id,
+        "subject": ticket.subject,
+        "type": ticket.type,
+        "description": ticket.description,
+        "requester_name": ticket.requester_name,
+        "requester_company":ticket.requester_company,
+        "requester_email": ticket.requester_email,
+        "requester_contact": ticket.requester_contact,
+        "created_at": ticket.created_at.isoformat() if ticket.created_at else None,
+        "engineer_name":ticket.engineer_name,
+        "engineer_contact":ticket.engineer_contact,
+        "status": ticket.status,
+        "documents": [ticket.documents] if ticket.documents else []
+    }
+
+    return jsonify({
+        "ticket": ticket_data,
+        "comments": comments_data
+    })
+    
+    
+@accountmanager_bp.route('/tickets/<int:ticket_id>', methods=['GET'])
+def get_accountmanager_ticket_details(ticket_id):
+    auth_header = request.headers.get("Authorization", None)
+    if not auth_header:
+        return jsonify({"error": "Authorization header missing"}), 401
+
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return jsonify({"error": "Invalid Authorization header format"}), 401
+
+    token = parts[1]
+    try:
+        secret = current_app.config['SECRET_KEY']
+        decoded = jwt.decode(token, secret, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Token expired"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Invalid token"}), 401
+
+    # Query the specific ticket for this company
+    ticket = Ticket.query.filter(
+        Ticket.id == ticket_id,
+    ).first()
+
+    if not ticket:
+        return jsonify({"error": "Ticket not found or access denied"}), 404
+
+    # Get comments for this ticket
+    comments = Comment.query.filter(Comment.ticket_id == ticket_id).order_by(Comment.timestamp.asc()).all()
+    comments_data = [{
+        "id": c.id,
+        "author": c.author_name,
+        "timestamp": c.timestamp.isoformat(),
+        "content": c.message,
+        "role": c.author_role
+    } for c in comments]
+
+    ticket_data = {
+        "id": ticket.id,
+        "subject": ticket.subject,
+        "type": ticket.type,
+        "description": ticket.description,
+        "requester_company":ticket.requester_company,
+        "requester_name": ticket.requester_name,
+        "requester_email": ticket.requester_email,
+        "requester_contact": ticket.requester_contact,
+        "created_at": ticket.created_at.isoformat() if ticket.created_at else None,
+        "status": ticket.status,
+        "documents": [ticket.documents] if ticket.documents else []
+    }
+
+    return jsonify({
+        "ticket": ticket_data,
+        "comments": comments_data
+    })

@@ -55,6 +55,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
       <nav className="flex-1 flex justify-center space-x-8 items-center ml-4">
         {[
           { to: "/am-dash", label: "Dashboard" },
+          { to: "/am-tickets", label: "Tickets" },
         ].map(({ to, label }) => (
           <NavLink
             key={to}
