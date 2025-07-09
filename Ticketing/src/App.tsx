@@ -26,6 +26,7 @@ import AdminCreateCus from "./Pages/Admin/AdminCreateCus"
 import AdminCreateCompany from "./Pages/Admin/AdminCreateCompany"
 import AdminCreateEng from "./Pages/Admin/AdminCreateEng"
 import AdminCreateAdmin from "./Pages/Admin/AdminCreateAdmin"
+import AdminCreateAM from "./Pages/Admin/AdminCreateAM"
 import AdminNotification from "./Pages/Admin/AdminNotifications"
 import AdminProfile from "./Pages/Admin/AdminProfile"
 import AdminHistory from "./Pages/Admin/AdminHistory"
@@ -84,6 +85,7 @@ const App: React.FC = () => {
       <Route path="/create-company" element={<AdminCreateCompany />} />
       <Route path="/create-eng" element={<AdminCreateEng />} />
       <Route path="/create-admin" element={<AdminCreateAdmin />} />
+      <Route path="/create-AM" element={<AdminCreateAM />} />
       <Route path="/admin-notifi" element={<AdminNotification />} />
       <Route path="/admin-profile" element={<AdminProfile />} />
       <Route path="/admin-history" element={<AdminHistory />} />

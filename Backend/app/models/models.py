@@ -146,3 +146,16 @@ class AdditionalTicketBundle(db.Model):
     month = db.Column(db.String(7), nullable=False)  # "YYYY-MM"
     additional_tickets = db.Column(db.Integer, default=0)
 
+class AccountManager(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    mobile = db.Column(db.String(15), nullable=False)
+    password = db.Column(db.String(128), nullable=False)
+    profile_image = db.Column(db.String(255), nullable=True) 
+
+    def set_password(self, password):
+        self.password = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password, password)

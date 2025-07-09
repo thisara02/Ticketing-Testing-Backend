@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { FaHistory, FaTachometerAlt, FaUser, FaUserPlus} from "react-icons/fa";
+import { FaBuilding, FaHistory, FaTachometerAlt, FaTicketAlt, FaUser, FaUserPlus} from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { NavLink } from "react-router-dom";
 import Swal from "sweetalert2";
 import { jwtDecode } from "jwt-decode";
+import { FaPerson } from "react-icons/fa6";
 
 // Sample user data — you can replace these with real props or context
 interface DecodedToken {
@@ -155,7 +156,7 @@ const AdminSide: React.FC<SidebarProps> = ({ isOpen }) => {
               ${isActive ? 'after:w-full text-blue-600' : 'after:w-0 group-hover:after:w-full'}`
             }
           >
-            <FaUserPlus />
+            <FaBuilding />
             <span>Register Company</span>
           </NavLink>
 
@@ -167,7 +168,7 @@ const AdminSide: React.FC<SidebarProps> = ({ isOpen }) => {
               ${isActive ? 'after:w-full text-blue-600' : 'after:w-0 group-hover:after:w-full'}`
             }
           >
-            <FaUserPlus />
+            <FaTicketAlt />
             <span>Additional Bundles Adding</span>
           </NavLink>
 
@@ -214,8 +215,20 @@ const AdminSide: React.FC<SidebarProps> = ({ isOpen }) => {
               ${isActive ? 'after:w-full text-blue-600' : 'after:w-0 group-hover:after:w-full'}`
             }
           >
-            <FaUser />
+            <FaPerson />
             <span>Admin Management</span>
+          </NavLink>
+
+          <NavLink
+            to="/create-AM"
+            className={({ isActive }) =>
+              `relative flex items-center space-x-3 text-gray-800 transition font-jura
+              hover:text-blue-600 after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:bg-blue-500 after:transition-all after:duration-300
+              ${isActive ? 'after:w-full text-blue-600' : 'after:w-0 group-hover:after:w-full'}`
+            }
+          >
+            <FaUser />
+            <span>Account Managers</span>
           </NavLink>
         </nav>
 

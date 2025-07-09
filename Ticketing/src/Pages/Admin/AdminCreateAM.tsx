@@ -13,17 +13,17 @@ import {
 import Swal from "sweetalert2";
 import "sweetalert2/dist/sweetalert2.min.css";
 
-interface Admin {
+interface AccountManager {
   id: number;
   name: string;
   email: string;
   mobile: string;
 }
 
-const AdminCreateAdmin = () => {
+const AdminCreateAM = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [admins, setAdmins] = useState<Admin[]>([]);
+  const [accountmanagers, setAccountmanagers] = useState<AccountManager[]>([]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -36,23 +36,23 @@ const AdminCreateAdmin = () => {
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
-  // Fetch all admins on mount
+  // Fetch all accountmanagers on mount
   useEffect(() => {
-    fetchAdmins();
+    fetchAccountManagers();
   }, []);
 
-  const fetchAdmins = async () => {
+  const fetchAccountManagers = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/admin/all");
-      if (!response.ok) throw new Error("Failed to fetch admins");
-      const data: Admin[] = await response.json();
-      setAdmins(data);
+      const response = await fetch("http://localhost:5000/api/accountmanager/all");
+      if (!response.ok) throw new Error("Failed to fetch account managers");
+      const data: AccountManager[] = await response.json();
+      setAccountmanagers(data);
     } catch (error) {
-      console.error("Error fetching admins:", error);
+      console.error("Error fetching accountmanagers:", error);
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: "Failed to fetch admins from server.",
+        text: "Failed to fetch account managers from server.",
       });
     }
   };
@@ -100,7 +100,7 @@ const AdminCreateAdmin = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:5000/api/admin/register", {
+      const response = await fetch("http://localhost:5000/api/accountmanager/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -118,13 +118,13 @@ const AdminCreateAdmin = () => {
       if (response.ok) {
         Swal.fire({
           icon: "success",
-          title: result.message || "Admin Created Successfully!",
+          title: result.message || "Account Manager Created Successfully!",
           timer: 1000,
           showConfirmButton: false,
         });
 
-        // Refresh admins list after successful creation
-        fetchAdmins();
+        // Refresh account managers list after successful creation
+        fetchAccountManagers();
 
         setFormData({
           name: "",
@@ -152,10 +152,10 @@ const AdminCreateAdmin = () => {
     }
   };
 
-  const handleDeleteAdmin = async (id: number) => {
+  const handleDeleteAccountManager = async (id: number) => {
     Swal.fire({
       title: "Are you sure?",
-      text: "This admin will be permanently deleted! This action cannot be undone.",
+      text: "This account manager will be permanently deleted! This action cannot be undone.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Yes, Delete!",
@@ -185,28 +185,28 @@ const AdminCreateAdmin = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const response = await fetch(`http://localhost:5000/api/admin/delete/${id}`, {
+          const response = await fetch(`http://localhost:5000/api/accountmanager/delete/${id}`, {
             method: "DELETE",
           });
 
-          if (!response.ok) throw new Error("Failed to delete admin");
+          if (!response.ok) throw new Error("Failed to delete account manager");
 
           Swal.fire({
             icon: "success",
             title: "Deleted!",
-            text: "Admin has been deleted.",
+            text: "Account Manager has been deleted.",
             timer: 1000,
             showConfirmButton: false,
           });
 
-          // Refresh admins list after deletion
-          fetchAdmins();
+          // Refresh accountmanagers list after deletion
+          fetchAccountManagers();
         } catch (error) {
           console.error("Delete error:", error);
           Swal.fire({
             icon: "error",
             title: "Error",
-            text: "Failed to delete admin. Please try again.",
+            text: "Failed to delete accountmanager. Please try again.",
           });
         }
       }
@@ -227,8 +227,8 @@ const AdminCreateAdmin = () => {
         <div className="flex-1 overflow-y-auto bg-gray-100 p-8">
           <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8 font-jura mb-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center justify-center gap-2">
-              <UserIcon className="h-8 w-8 text-green-500" />
-              New Admin Profile Creation
+              <UserIcon className="h-8 w-8 text-purple-500" />
+              Account Managers Registration
             </h2>
 
             <form
@@ -320,34 +320,34 @@ const AdminCreateAdmin = () => {
               <div className="md:col-span-2 flex justify-center mt-4">
                 <button
                   type="submit"
-                  className="bg-green-600 text-white font-semibold px-6 py-3 rounded hover:bg-green-700 transition duration-300"
+                  className="bg-purple-600 text-white font-semibold px-6 py-3 rounded hover:bg-purple-700 transition duration-300"
                 >
-                  Create Admin Profile
+                  Register
                 </button>
               </div>
             </form>
           </div>
 
-          {/* Admin List Section */}
+          {/*accountmanager List Section */}
           <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6 font-jura">
-            <h3 className="text-xl font-bold mb-4 text-green-600">All Admins</h3>
-            {admins.length === 0 ? (
-              <p className="text-gray-500">No Admins registered yet.</p>
+            <h3 className="text-xl font-bold mb-4 text-purple-600">Registered Account Managers</h3>
+            {accountmanagers.length === 0 ? (
+              <p className="text-gray-500">No Account Managers registered yet.</p>
             ) : (
               <ul className="space-y-4">
-                {admins.map((admin) => (
+                {accountmanagers.map((accountmanager) => (
                   <li
-                    key={admin.id}
+                    key={accountmanager.id}
                     className="flex items-center justify-between border-b pb-2 text-gray-700"
                   >
                     <div>
-                      <p className="font-semibold">{admin.name}</p>
+                      <p className="font-semibold">{accountmanager.name}</p>
                       <p className="text-sm">
-                        {admin.email} <br/> {admin.mobile}
+                        {accountmanager.email} <br/> {accountmanager.mobile}
                       </p>
                     </div>
                     <button
-                      onClick={() => handleDeleteAdmin(admin.id)}
+                      onClick={() => handleDeleteAccountManager(accountmanager.id)}
                       className="text-red-500 hover:text-red-700 flex items-center gap-1"
                     >
                       <TrashIcon className="h-5 w-5" />
@@ -363,4 +363,4 @@ const AdminCreateAdmin = () => {
   );
 };
 
-export default AdminCreateAdmin;
+export default AdminCreateAM;
