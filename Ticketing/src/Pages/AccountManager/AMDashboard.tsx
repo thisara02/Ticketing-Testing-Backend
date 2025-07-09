@@ -163,7 +163,8 @@ const AMDash = () => {
                 companies.map((company) => (
                   <div
                     key={company.id}
-                    className="bg-gray-50 rounded-xl border border-gray-200 p-5 hover:shadow-md transition"
+                    onClick={() => navigate(`/am-company/${encodeURIComponent(company.name)}`)}
+                    className="cursor-pointer bg-gray-50 rounded-xl border border-gray-200 p-5 hover:shadow-md transition"
                   >
                     <h3 className="text-lg font-semibold text-black mb-3 border-b">
                       {company.name}

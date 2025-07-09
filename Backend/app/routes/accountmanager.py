@@ -1,3 +1,4 @@
+from functools import wraps
 import math
 import os
 from flask import Blueprint, request, jsonify, current_app, send_from_directory
@@ -557,6 +558,10 @@ def get_tickets_for_account_manager():
                 "created_at": t.created_at.strftime("%Y-%m-%d %H:%M"),
                 "closed_at": t.closed_at.strftime("%Y-%m-%d %H:%M") if t.closed_at else None,
                 "engineer_name": t.engineer_name,
+                "engineer_contact":t.engineer_contact,
+                "status": t.status,
+                "work_done_comment":t.work_done_comment,
+                "rectification_date":t.rectification_date.isoformat() if t.rectification_date else None,
             }
             for t in tickets
         ]
@@ -746,3 +751,64 @@ def get_accountmanager_ticket_details(ticket_id):
         "ticket": ticket_data,
         "comments": comments_data
     })
+    
+    
+def token_required_am(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth_header = request.headers.get("Authorization", None)
+        if not auth_header:
+            return jsonify({"error": "Authorization header missing"}), 401
+
+        parts = auth_header.split()
+        if len(parts) != 2 or parts[0].lower() != "bearer":
+            return jsonify({"error": "Invalid Authorization header format"}), 401
+
+        token = parts[1]
+        try:
+            decoded = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
+            request.am_id = decoded.get("id")
+            request.am_email = decoded.get("email")
+            request.am_name = decoded.get("name")
+        except jwt.ExpiredSignatureError:
+            return jsonify({"error": "Token expired"}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid token"}), 401
+
+        return f(*args, **kwargs)
+    return decorated
+
+@accountmanager_bp.route("/company-details/<string:company_name>", methods=["GET"])
+@token_required_am
+def get_company_details(company_name):
+    try:
+        # Find the company info
+        company = CompanySupport.query.filter_by(company=company_name).first()
+        if not company:
+            return jsonify({"error": "Company not found"}), 404
+
+        # Get bundle history, newest first
+        bundles = AdditionalTicketBundle.query.filter_by(company=company_name).order_by(AdditionalTicketBundle.month.desc()).all()
+
+        bundle_data = [
+            {
+                "month": b.month,
+                "additional_tickets": b.additional_tickets,
+                "created_at": b.created_at.strftime("%Y-%m-%d %H:%M:%S") if b.created_at else None  # formatted
+            }
+            for b in bundles
+        ]
+
+        company_data = {
+            "name": company.company,
+            "location": company.location,
+            "contact_person": company.contact_person,
+            "contact_mobile": company.contact_mobile,
+            "support_type": company.support_type,
+            "bundles": bundle_data,
+        }
+
+        return jsonify(company_data), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

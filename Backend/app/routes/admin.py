@@ -5,11 +5,12 @@ from app.models import Admin
 from app.models import Ticket
 from app.models import Comment
 from app.models import CompanySupport
+from app.models import AccountManager
 import jwt
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash
 import random
-from app.utils.email_utils import send_admin_otp_email
+from app.utils.email_utils import send_admin_otp_email, send_bundle_notification_to_am
 from app.models import OTPModel
 from app.utils.email_utils import send_otp_email
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
@@ -745,19 +746,40 @@ def admin_dashboard_summary():
 def add_additional_bundle():
     data = request.get_json()
     company = data.get('company')
-    month = data.get('month')  # Format: YYYY-MM
+    month = data.get('month')  # Format: "YYYY-MM"
     tickets = data.get('additional_tickets')
 
     if not company or not month or not tickets:
-        return jsonify({'error': 'Missing fields'}), 400
+        return jsonify({'error': 'Missing required fields'}), 400
 
-    # Upsert logic (update if exists, else insert)
-    bundle = AdditionalTicketBundle.query.filter_by(company=company, month=month).first()
-    if bundle:
-        bundle.additional_tickets += tickets
-    else:
-        bundle = AdditionalTicketBundle(company=company, month=month, additional_tickets=tickets)
-        db.session.add(bundle)
+    try:
+        # Step 1: Upsert bundle
+        bundle = AdditionalTicketBundle.query.filter_by(company=company, month=month).first()
+        if bundle:
+            bundle.additional_tickets += tickets
+        else:
+            bundle = AdditionalTicketBundle(company=company, month=month, additional_tickets=tickets)
+            db.session.add(bundle)
+        db.session.commit()
 
-    db.session.commit()
-    return jsonify({'message': f'{tickets} additional tickets added for {company} in {month}'}), 200
+        # Step 2: Lookup account manager from company
+        company_record = CompanySupport.query.filter_by(company=company).first()
+        if company_record and company_record.account_manager:
+            am_name = company_record.account_manager
+            account_manager = AccountManager.query.filter_by(name=am_name).first()
+
+            if account_manager:
+                # Step 3: Send email notification
+                send_bundle_notification_to_am(
+                    am_email=account_manager.email,
+                    am_name=account_manager.name,
+                    company=company,
+                    month=month,
+                    tickets=tickets
+                )
+
+        return jsonify({'message': f'{tickets} additional tickets added for {company} in {month}'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500

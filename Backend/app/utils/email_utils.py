@@ -1237,5 +1237,88 @@ def send_sr_customer_notification_email(
         print(f"Failed to send engineer-created SR email: {str(e)}")
         return False
 
+def send_bundle_notification_to_am(am_email, am_name, company, month, tickets):
+    """Send an email to the Account Manager when a bundle is added for their company."""
+
+    try:
+        msg = Message(
+            subject=f"New Ticket Bundle Added - {company}",
+            recipients=[am_email],
+            sender=current_app.config["MAIL_DEFAULT_SENDER"],
+        )
+
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        msg.html = f"""
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }}
+                .container {{ max-width: 600px; margin: auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
+                .header {{ background: #0a5275; color: white; padding: 15px; border-radius: 5px; text-align: center; }}
+                .details {{ margin-top: 20px; }}
+                .details p {{ margin: 5px 0; }}
+                .footer {{ margin-top: 30px; font-size: 12px; color: #666; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>New Ticket Bundle Added</h2>
+                </div>
+                <p>Dear {am_name},</p>
+                <p>This is to notify you that an additional ticket bundle has been added for <strong>{company}</strong>.</p>
+                
+                <div class="details">
+                    <p><strong>Company:</strong> {company}</p>
+                    <p><strong>Month:</strong> {month}</p>
+                    <p><strong>Bundle:</strong> {tickets} tickets</p>
+                    <p><strong>Added On:</strong> {current_time}</p>
+                </div>
+
+                <p>If you have any concerns, please contact your support lead or the admin team.</p>
+
+                <p>Best regards,<br>
+                <strong>{company} Support Team</strong></p>
+
+                <div class="footer">
+                    <p>This is an automated message. Please do not reply.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        msg.body = f"""
+        Dear {am_name},
+
+        This is to notify you that an additional ticket bundle has been added for {company}.
+
+        Company: {company}
+        Month: {month}
+        Bundle: {tickets} tickets
+        Added On: {current_time}
+
+        If you have any concerns, please contact your support lead or the admin team.
+
+        Best regards,
+        {company} Support Team
+
+        ---
+        This is an automated message. Please do not reply.
+        """
+
+        # Send asynchronously
+        thread = threading.Thread(
+            target=send_async_email,
+            args=(current_app._get_current_object(), msg),
+        )
+        thread.start()
+        return True
+
+    except Exception as e:
+        print(f"Failed to send bundle notification email: {e}")
+        return False
+
 # Import datetime at the top of the file
 from datetime import datetime

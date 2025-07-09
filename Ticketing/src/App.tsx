@@ -60,6 +60,7 @@ import AMTickets from "./Pages/AccountManager/AMTickets"
 import AMViewPending from "./Pages/AccountManager/AMViewPending"
 import AMViewClosed from "./Pages/AccountManager/AMViewClosed"
 import AMViewOngoing from "./Pages/AccountManager/AMViewOngoing"
+import AMCompanyDetail from "./Pages/AccountManager/AMCompanyDetails"
 
 
 const App: React.FC = () => {
@@ -132,6 +133,8 @@ const App: React.FC = () => {
       <Route path="/am-view-closed/:ticketId" element={<AMViewClosed />} />
       <Route path="/am-view-pending/:ticketId" element={<AMViewPending />} />
       <Route path="/am-viewon/:ticketId" element={<AMViewOngoing />} />
+      <Route path="/am-company/:companyName" element={<AMCompanyDetail />} />
+
       
     </Routes>
     </AnimatePresence>

@@ -194,27 +194,27 @@ const EngCreateFT = () => {
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <input type="email" value={customerEmail} readOnly className="bg-gray-200 rounded-md p-2" />
-              <input type="text" value={customerContact} readOnly className="bg-gray-200 rounded-md p-2" />
+              <input type="email" value={customerEmail} readOnly className="bg-gray-200 rounded-md p-2 text-black cursor-not-allowed" />
+              <input type="text" value={customerContact} readOnly className="bg-gray-200 rounded-md p-2 text-black cursor-not-allowed" />
             </div>
             <div className="mt-8">
               <h2 className="flex items-center text-xl font-semibold text-gray-800 font-jura mb-2">
                 <FaExclamationTriangle className="mr-2 text-yellow-500" /> Incident Info
               </h2>
-              <Select options={faultyOptions} value={selectedSubject} onChange={setSelectedSubject} />
+              <Select options={faultyOptions} value={selectedSubject} onChange={setSelectedSubject} className="mr-2 text-black"/>
               <textarea
                 rows={5}
                 placeholder="Describe the issue..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="mt-4 w-full p-3 border border-gray-300 rounded-md font-jura"
+                className="mt-4 w-full p-3 border border-gray-300 rounded-md font-jura bg-white text-black" 
               ></textarea>
               <div className="mt-4">
-                <label className="block font-jura font-semibold">Priority</label>
+                <label className="block font-jura font-semibold text-black">Priority</label>
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value)}
-                  className={`w-1/2 p-2 border border-gray-300 rounded-md font-jura ${priorityColors[priority]}`}
+                  className={`w-1/2 p-2 border bg-white text-black border-gray-300 rounded-md font-jura ${priorityColors[priority]}`}
                 >
                   <option value="">Select Priority</option>
                   <option value="Critical">Critical</option>
@@ -224,11 +224,11 @@ const EngCreateFT = () => {
                 </select>
               </div>
               <div className="mt-4">
-                <label className="block font-jura font-semibold mb-2">Upload File (Optional)</label>
+                <label className="block font-jura font-semibold mb-2 text-black">Upload File (Optional)</label>
                 <input
                   type="file"
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 text-black"
                 />
               </div>
               <button
