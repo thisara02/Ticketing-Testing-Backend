@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import Navbar from "../../components/AmNav";
 import { FaCamera } from "react-icons/fa";
 import Swal from "sweetalert2";
+import Default from "../../assets/default.jpg";
 
 
 const AMProfile = () => {
@@ -228,9 +229,11 @@ useEffect(() => {
                     className="w-full h-full rounded-full object-cover border-4 border-gray-300"
                   />
                 ) : (
-                  <div className="w-full h-full rounded-full border-4 border-gray-300 bg-gray-200 flex items-center justify-center text-gray-500">
-                    No Image
-                  </div>
+                  <img
+                    src={Default}
+                    alt="Default Profile"
+                    className="w-full h-full rounded-full object-cover border-4 border-gray-300"
+                  />
                 )}
                 <div
                   onClick={handleImageClick}

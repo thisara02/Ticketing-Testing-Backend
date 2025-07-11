@@ -4,6 +4,7 @@ import { FaPlus, FaTicket } from "react-icons/fa6";
 import { useNavigate, NavLink } from "react-router-dom";
 import Swal from "sweetalert2";
 import { jwtDecode } from "jwt-decode";
+import Default from "../assets/default.jpg";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -130,12 +131,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                 onClick={() => navigate("/profile")}
               />
             ) : (
-              <div
+              <img
+                src={Default}
+                alt="Default Profile"
+                className="w-16 h-16 rounded-full object-cover border border-gray-300 mx-auto cursor-pointer mb-2"
                 onClick={() => navigate("/profile")}
-                className="w-16 h-16 rounded-full border-4 border-gray-300 bg-gray-200 flex items-center justify-center text-gray-500 object-cover mx-auto cursor-pointer text-center"
-              >
-                USER
-              </div>
+              />
             )}
             <p className="font-semibold text-[#000000] font-jura text-center text-xl">
               {customerName}

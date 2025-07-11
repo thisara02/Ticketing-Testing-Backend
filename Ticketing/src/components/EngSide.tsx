@@ -5,6 +5,7 @@ import { FaTicket, FaUserGroup } from "react-icons/fa6";
 import { NavLink } from "react-router-dom";
 import Swal from "sweetalert2";
 import {jwtDecode} from "jwt-decode";
+import Default from "../assets/default.jpg";
 
 // Sample user data — you can replace these with real props or context
 interface SidebarProps {
@@ -123,9 +124,12 @@ const EngSide: React.FC<SidebarProps> = ({ isOpen }) => {
                     onClick={() => navigate("/eng-profile")}
                   />
                 ) : (
-                  <div onClick={() => navigate("/eng-profile")} className="w-16 h-16 rounded-full border-4 border-gray-300 bg-gray-200 flex items-center justify-center text-gray-500 object-cover mx-auto cursor-pointer text-center">
-                    USER
-                  </div>
+                  <img
+                    src={Default}
+                    alt="Default Profile"
+                    className="w-16 h-16 rounded-full object-cover border border-gray-300 mx-auto cursor-pointer mb-2"
+                    onClick={() => navigate("/eng-profile")}
+                  />
                 )}
         
             <p className="font-semibold text-black   text-base font-jura text-center">{engineerName}</p>

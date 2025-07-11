@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import Swal from "sweetalert2";
+import Default from "../../assets/default.jpg";
 
 interface DecodedToken {
   name: string;
@@ -132,11 +133,15 @@ const AMDash = () => {
                     src={profileImagePreview}
                     alt="Profile"
                     className="w-16 h-16 rounded-full object-cover border border-gray-300"
+                    onClick={() => navigate("/am-profile")}
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-full border-4 border-gray-300 bg-gray-200 flex items-center justify-center text-gray-500">
-                    USER
-                  </div>
+                  <img
+                    src={Default}
+                    alt="Default Profile"
+                    className="w-16 h-16 rounded-full object-cover border border-gray-300 mx-auto cursor-pointer mb-2"
+                    onClick={() => navigate("/am-profile")}
+                  />
                 )}
                 <div>
                   <h2 className="text-xl font-semibold text-black">{accountmanagerName}</h2>

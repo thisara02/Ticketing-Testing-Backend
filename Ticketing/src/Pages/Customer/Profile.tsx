@@ -3,6 +3,7 @@ import Sidebar from "../../components/Sidebar";
 import Navbar from "../../components/Navbar";// Replace with actual path
 import { FaCamera } from "react-icons/fa";
 import Swal from "sweetalert2";
+import Default from "../../assets/default.jpg";
 
 const CusProfile = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -225,16 +226,19 @@ useEffect(() => {
 
             <div className="flex justify-center mb-6">
                 <div className="relative w-32 h-32">
-                  {profileImagePreview ? (
+                  
+                {profileImagePreview ? (
                   <img
                     src={profileImagePreview}
                     alt="Profile"
                     className="w-full h-full rounded-full object-cover border-4 border-gray-300"
                   />
                 ) : (
-                  <div className="w-full h-full rounded-full border-4 border-gray-300 bg-gray-200 flex items-center justify-center text-gray-500">
-                    No Image
-                  </div>
+                  <img
+                    src={Default}
+                    alt="Default Profile"
+                    className="w-full h-full rounded-full object-cover border-4 border-gray-300"
+                  />
                 )}
                 <div
                   onClick={handleImageClick}
