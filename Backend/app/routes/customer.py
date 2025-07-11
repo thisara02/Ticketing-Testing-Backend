@@ -658,6 +658,7 @@ def get_customer_onticket_details(ticket_id):
         "status": ticket.status,
         "engineer_name":ticket.engineer_name,
         "engineer_contact":ticket.engineer_contact,
+        "assigned_at": ticket.assigned_at.isoformat() if ticket.assigned_at else None,
         "documents": []  # Add document handling if needed
     }
 

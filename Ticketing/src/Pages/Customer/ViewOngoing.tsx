@@ -16,6 +16,7 @@ interface Ticket {
   documents?: string[];
   engineer_name:string;
   engineer_contact:string;
+  assigned_at?: string; 
 }
 
 interface Comment {
@@ -25,6 +26,15 @@ interface Comment {
   content: string;
   role: string;
 }
+
+const formatDuration = (seconds: number) => {
+  const days = Math.floor(seconds / (3600 * 24));
+  const hours = Math.floor((seconds % (3600 * 24)) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  return `Days: ${days} Hours: ${hours} Minutes: ${minutes} Seconds: ${secs}`;
+};
 
 const ViewOngoing = () => {
 const { ticketId } = useParams<{ ticketId: string }>();
@@ -36,6 +46,28 @@ const { ticketId } = useParams<{ ticketId: string }>();
   const [error, setError] = useState<string | null>(null);
 
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
+  const [elapsedTime, setElapsedTime] = useState<string>("");
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+
+    useEffect(() => {
+    if (!ticket?.assigned_at) return;
+  
+    const assignedTime = new Date(ticket.assigned_at).getTime();
+  
+    // Function to update elapsed time immediately
+    const updateElapsed = () => {
+      const now = Date.now();
+      const diffInSeconds = Math.floor((now - assignedTime) / 1000);
+      setElapsedSeconds(diffInSeconds);
+      setElapsedTime(formatDuration(diffInSeconds));
+    };
+  
+    updateElapsed(); // run immediately on effect start
+  
+    const interval = setInterval(updateElapsed, 1000);
+  
+    return () => clearInterval(interval);
+  }, [ticket]);
 
   useEffect(() => {
     const fetchTicketDetails = async () => {
@@ -167,11 +199,20 @@ const { ticketId } = useParams<{ ticketId: string }>();
 
             <div className="flex-1 overflow-y-auto bg-gray-100 p-8">
             {/* Header */}
-            <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-                Ticket ID: <span className="text-teal-600">{ticket.id}</span>
-                </h1>
-            </div>
+            <div className="bg-white p-6 rounded-lg shadow-md mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+              Ticket ID: <span className="text-teal-600">{ticket.id}</span>
+            </h1>
+            {elapsedTime && (
+              <p
+                className={`text-2xl p-5 ${
+                  elapsedSeconds > 3600 ? 'bg-red-100 text-red-700' : 'bg-green-50 text-teal-700'
+                } md:mb-0`}
+              >
+                ⏱️ Lapsed Time since assigned: <span className="font-semibold">{elapsedTime}</span>
+              </p>
+            )}
+          </div>
 
             {/* Main Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

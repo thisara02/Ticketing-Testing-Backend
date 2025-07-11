@@ -153,11 +153,11 @@ const AMTickets = () => {
                     ticket.status
                   )} bg-white p-6 rounded-xl shadow-md space-y-3 cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-transform duration-200`}
                 >
-                  <h3 className="text-xl font-semibold text-blue-700 mb-2">
-                    #{ticket.id} - {ticket.subject}
+                  <h3 className="text-2xl font-semibold text-blue-700 mb-2">
+                    {ticket.requester_company} /  Ticket ID :  #{ticket.id}
                   </h3>
                   <div className="grid grid-cols-1 gap-1 text-sm text-gray-700">
-                    <p><strong>Company:</strong> {ticket.requester_company}</p>
+                    <p className="text-lg text-black"><strong>Subject :</strong> {ticket.subject}</p>
                     <p><strong>Type:</strong> {ticket.type}</p>
                     <p><strong>Priority:</strong> {ticket.priority}</p>
                     <p><strong>Status:</strong> {ticket.status}</p>

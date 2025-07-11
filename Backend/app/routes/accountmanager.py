@@ -686,6 +686,7 @@ def get_accountmanager_onticket_details(ticket_id):
         "created_at": ticket.created_at.isoformat() if ticket.created_at else None,
         "engineer_name":ticket.engineer_name,
         "engineer_contact":ticket.engineer_contact,
+        "assigned_at": ticket.assigned_at.isoformat() if ticket.assigned_at else None,
         "status": ticket.status,
         "documents": [ticket.documents] if ticket.documents else []
     }

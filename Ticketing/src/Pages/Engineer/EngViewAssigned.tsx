@@ -61,19 +61,22 @@ const EngViewAssigned = () => {
 
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
-   useEffect(() => {
+  useEffect(() => {
   if (!ticket?.assigned_at) return;
 
   const assignedTime = new Date(ticket.assigned_at).getTime();
-  
 
-  const interval = setInterval(() => {
+  // Function to update elapsed time immediately
+  const updateElapsed = () => {
     const now = Date.now();
     const diffInSeconds = Math.floor((now - assignedTime) / 1000);
-    setElapsedTime(formatDuration(diffInSeconds));
     setElapsedSeconds(diffInSeconds);
     setElapsedTime(formatDuration(diffInSeconds));
-  }, 1000);
+  };
+
+  updateElapsed(); // run immediately on effect start
+
+  const interval = setInterval(updateElapsed, 1000);
 
   return () => clearInterval(interval);
 }, [ticket]);
