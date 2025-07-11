@@ -427,6 +427,7 @@ def assign_ticket(ticket_id):
 
         ticket.engineer_name = engineer_name
         ticket.engineer_email = engineer_email
+        ticket.engineer_contact=engineer_contact
         ticket.status = "Ongoing"
         ticket.assigned_at = datetime.now(ZoneInfo("Asia/Colombo")),
 

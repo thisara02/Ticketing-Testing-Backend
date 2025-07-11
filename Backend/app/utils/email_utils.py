@@ -3,6 +3,7 @@ from flask_mail import Message
 from flask import current_app
 from app import mail  # Import your mail instance
 import threading
+from datetime import datetime
 
 def send_async_email(app, msg):
     """Send email asynchronously"""
@@ -1319,6 +1320,178 @@ def send_bundle_notification_to_am(am_email, am_name, company, month, tickets):
     except Exception as e:
         print(f"Failed to send bundle notification email: {e}")
         return False
+    
 
-# Import datetime at the top of the file
-from datetime import datetime
+def send_bundle_purchase_notification_email_to_manager(email, company, month, added_by, ticket_count, name):
+    try:
+        msg = Message(
+            subject=f"[Bundle Added] {company} purchased {ticket_count} extra SRs for {month}",
+            recipients=[email],
+            sender=current_app.config["MAIL_DEFAULT_SENDER"]
+        )
+
+        msg.html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    background-color: #f4f4f4;
+                    padding: 20px;
+                }}
+                .container {{
+                    max-width: 600px;
+                    margin: auto;
+                    background-color: #ffffff;
+                    padding: 30px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                }}
+                .header {{
+                    background-color: #00695c;
+                    color: white;
+                    padding: 20px;
+                    border-radius: 8px 8px 0 0;
+                    text-align: center;
+                }}
+                .content {{
+                    color: #333;
+                    padding: 20px 0;
+                }}
+                .footer {{
+                    margin-top: 30px;
+                    font-size: 12px;
+                    color: #888;
+                    text-align: center;
+                }}
+                .highlight {{
+                    font-weight: bold;
+                    color: #00897b;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>Extra SR Bundle Purchased</h2>
+                </div>
+                <div class="content">
+                    <p>Dear <strong>{name}</strong>,</p>
+                    
+                    <p>
+                        Your customer company <span class="highlight">{company}</span> has successfully purchased
+                        <span class="highlight">{ticket_count}</span> additional Service Requests for the month of
+                        <span class="highlight">{month}</span>.
+                    </p>
+
+                    <p>
+                        <strong>Added by:</strong> {added_by}
+                    </p>
+
+                    <p>
+                        Please take note of this activity and follow up if necessary.
+                    </p>
+
+                    <p>Thank you,<br><strong>LankaCom Ticketing System</strong></p>
+                </div>
+                <div class="footer">
+                    This is an automated message. Please do not reply directly to this email.
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        msg.body = f"""
+        Dear {name},
+
+        Your customer company "{company}" has purchased {ticket_count} additional Service Requests for the month of {month}.
+
+        Added by: {added_by}
+
+        Please review or follow up if necessary.
+
+        Regards,
+        LankaCom Ticketing System
+        """
+
+        thread = threading.Thread(target=send_async_email, args=(current_app._get_current_object(), msg))
+        thread.start()
+
+        return True
+    except Exception as e:
+        print(f"Failed to send manager email: {e}")
+        return False
+
+def notify_customers_of_bundle(company, customers, additional_tickets, added_by, month):
+    """Notify all customers from a company that a ticket bundle was purchased."""
+    try:
+        emails = [c.email for c in customers if c.email]
+
+        if not emails:
+            print(f"No valid customer emails found for company: {company}")
+            return False
+
+        msg = Message(
+            subject="New Ticket Bundle Added for Your Company",
+            recipients=emails,
+            sender=current_app.config["MAIL_DEFAULT_SENDER"],
+        )
+
+        msg.body = f"""
+        Dear {company} Customer,
+
+        A new ticket bundle of {additional_tickets} tickets has been added for {month}.
+
+        This bundle was added by: {added_by}
+
+        You may now use the additional quota for your service requests.
+
+        Regards,
+        Lankacom Support Team
+        """
+
+        msg.html = f"""
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }}
+                .container {{ background-color: white; padding: 30px; border-radius: 10px; max-width: 600px; margin: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+                .header {{ background-color: #1E90FF; padding: 20px; color: white; text-align: center; border-radius: 5px; }}
+                .content {{ margin-top: 20px; color: #333; line-height: 1.6; }}
+                .footer {{ margin-top: 30px; font-size: 12px; color: #888; text-align: center; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>New Ticket Bundle Added</h2>
+                </div>
+                <div class="content">
+                    <p>Dear Customer,</p>
+                    <p>A new bundle of <strong>{additional_tickets} tickets</strong> has been added to your company’s quota for the month of <strong>{month}</strong>.</p>
+                    <p>This was added by: <strong>{added_by}</strong></p>
+                    <p>You may now raise additional service requests using the updated quota.</p>
+                    <p>Thank you for your continued use of our services.</p>
+                    <p>Regards,<br><strong>Lankacom Support Team</strong></p>
+                </div>
+                <div class="footer">
+                    <p>This is an automated message. Please do not reply to this email.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        thread = threading.Thread(
+            target=send_async_email,
+            args=(current_app._get_current_object(), msg),
+        )
+        thread.start()
+
+        return True
+
+    except Exception as e:
+        print(f"Failed to notify customers: {str(e)}")
+        return False

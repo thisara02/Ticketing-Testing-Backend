@@ -13,8 +13,8 @@ from app.models import Ticket
 from app.models import Comment
 from app.models import Engineer
 from pytz import timezone
-from app.models import LoginAttempt
-from app.utils.email_utils import send_otp_email
+from app.models import LoginAttempt,AccountManager
+from app.utils.email_utils import notify_customers_of_bundle,send_bundle_purchase_notification_email_to_manager, send_otp_email
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from app.models import OTPModel
 from app.utils.email_utils import notify_engineer_about_customer_comment
@@ -1188,6 +1188,38 @@ def purchase_bundle():
         )
         db.session.add(bundle)
         db.session.commit()
+
+        # --- Get account manager email ---
+        company_info = db.session.query(CompanySupport).filter_by(company=company).first()
+        if not company_info:
+            return jsonify({"error": "Company support record not found"}), 404
+
+        # Get AccountManager record using name
+        account_manager = db.session.query(AccountManager).filter_by(name=company_info.account_manager).first()
+        if not account_manager:
+            return jsonify({"error": "Account manager not found"}), 404
+
+        account_manager_email = account_manager.email
+        account_manager_name = account_manager.name
+        send_bundle_purchase_notification_email_to_manager(
+            name=account_manager_name,
+            email=account_manager_email,
+            company=company,
+            month=current_month,
+            added_by=added_by,
+            ticket_count=tickets
+        )
+
+            
+        company_customers = Customer.query.filter_by(company=company).all()
+        if company_customers:
+            notify_customers_of_bundle(
+                company=company,
+                customers=company_customers,
+                additional_tickets=tickets,
+                added_by=added_by,
+                month=current_month
+            )
 
         return jsonify({"success": True, "message": f"{tickets} tickets purchased successfully."}), 200
 
