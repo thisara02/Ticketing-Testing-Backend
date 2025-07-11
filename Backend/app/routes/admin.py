@@ -759,7 +759,8 @@ def add_additional_bundle():
             company=company,
             month=month,
             additional_tickets=tickets,
-            source="manual"
+            source="manual",
+            added_by="Administrator"
         )
         db.session.add(bundle)
 

@@ -1151,3 +1151,45 @@ def get_cus_closeticket_details(ticket_id):
         "comments": comments_data
     })
 
+
+@customer_bp.route("/purchase-bundle", methods=["POST"])
+def purchase_bundle():
+    try:
+        # --- Get JWT token ---
+        token = request.headers.get("Authorization", None)
+        if not token:
+            return jsonify({"error": "Authorization token missing"}), 401
+
+        token = token.replace("Bearer ", "")
+        decoded = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
+
+        added_by = decoded.get("name")
+        company = decoded.get("company")
+
+        # --- Get current Sri Lanka time ---
+        sri_lanka_time = datetime.utcnow() + timedelta(hours=5, minutes=30)
+        current_month = sri_lanka_time.strftime("%Y-%m")
+
+        # --- Get bundle details from request ---
+        data = request.get_json()
+        tickets = int(data.get("tickets", 0))
+        if tickets not in [3, 5, 10]:
+            return jsonify({"error": "Invalid bundle size"}), 400
+
+        # --- Save to database ---
+        bundle = AdditionalTicketBundle(
+            company=company,
+            month=current_month,
+            additional_tickets=tickets,
+            source="manual",
+            added_by=added_by,
+            created_at=sri_lanka_time
+        )
+        db.session.add(bundle)
+        db.session.commit()
+
+        return jsonify({"success": True, "message": f"{tickets} tickets purchased successfully."}), 200
+
+    except Exception as e:
+        print("Bundle Purchase Error:", e)
+        return jsonify({"error": "Something went wrong"}), 500

@@ -105,7 +105,8 @@ def create_service_request():
         if monthly_ticket_count >= total_allowed_tickets:
             if quota_usage and quota_usage.used_extra:
                 return jsonify({
-                    "error": "Your monthly SR quota including purchased bundles is exhausted, and your one-time extra SR has already been used. Contact Lanakacom Presales via 0912250764 to purchase more ticket bundles."
+                    "error": "Your monthly SR quota including purchased bundles is exhausted, and your one-time extra SR has already been used.",
+                    "show_add_bundle_prompt": True
                 }), 403
 
             if not quota_usage:
@@ -427,6 +428,7 @@ def assign_ticket(ticket_id):
         ticket.engineer_name = engineer_name
         ticket.engineer_email = engineer_email
         ticket.status = "Ongoing"
+        ticket.assigned_at = datetime.now(ZoneInfo("Asia/Colombo")),
 
         db.session.commit()
         
@@ -530,7 +532,23 @@ def get_assigned_tickets():
         print(f"Error fetching assigned tickets: {str(e)}")
         return jsonify({'error': str(e)}), 500
     
-    
+def calculate_duration_seconds(assigned_at, closed_at):
+    if assigned_at and closed_at:
+        from pytz import timezone
+
+        sltz = timezone("Asia/Colombo")
+
+        if assigned_at.tzinfo is None:
+            assigned_at = sltz.localize(assigned_at)
+        else:
+            assigned_at = assigned_at.astimezone(sltz)
+
+        closed_at = closed_at.astimezone(sltz)
+
+        return int((closed_at - assigned_at).total_seconds())
+    return None
+
+
 @ticket_bp.route('/close/<int:ticket_id>', methods=['POST'])
 def close_ticket(ticket_id):
     try:
@@ -576,6 +594,7 @@ def close_ticket(ticket_id):
         ticket.work_done_comment = work_done_comment
         ticket.status = "Closed"
         ticket.closed_at = datetime.now(timezone("Asia/Colombo"))
+        ticket.duration = calculate_duration_seconds(ticket.assigned_at, ticket.closed_at)
 
         db.session.commit()
 

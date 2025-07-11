@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { FaTachometerAlt, FaHistory } from "react-icons/fa";
-import { FaTicket } from "react-icons/fa6";
+import { FaPlus, FaTicket } from "react-icons/fa6";
 import { useNavigate, NavLink } from "react-router-dom";
 import Swal from "sweetalert2";
 import { jwtDecode } from "jwt-decode";
@@ -182,6 +182,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
           >
             <FaHistory className="transition text-xl" />
             <span className="transition">Request History</span>
+          </NavLink>
+
+          <NavLink
+            to="/add-bundle"
+            className={({ isActive }) =>
+              `group flex items-center space-x-3 px-4 py-2 rounded-md font-jura transition-all duration-300
+              ${isActive ? "bg-gray-200 text-black" : "text-[#092635] hover:bg-teal-100 hover:text-black"}`
+            }
+          >
+            <FaPlus className="transition text-3xl" />
+            <span className="transition">Additional Service Requests</span>
           </NavLink>
         </nav>
 

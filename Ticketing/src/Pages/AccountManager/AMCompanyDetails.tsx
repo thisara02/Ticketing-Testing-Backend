@@ -7,6 +7,7 @@ interface Bundle {
   month: string;
   additional_tickets: number;
   created_at: string;
+  added_by:string;
 }
 
 interface CompanyDetail {
@@ -86,7 +87,8 @@ const AMCompanyDetail = () => {
                     >
                     <p><strong>Month:</strong> {b.month}</p>
                     <p><strong>Tickets:</strong> {b.additional_tickets}</p>
-                    <p><strong>Added On:</strong> {b.created_at}</p> {/* ✅ Added this */}
+                    <p><strong>Added On:</strong> {b.created_at}</p>
+                    <p><strong>Added By:</strong> {b.added_by}</p> {/* ✅ Added this */}
                     </li>
                 ))}
                 </ul>

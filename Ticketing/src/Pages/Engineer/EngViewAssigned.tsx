@@ -16,7 +16,7 @@ interface Ticket {
   status: string;
   documents?: string[];
   engineer_name:string;
-  // engineer_contact:string;
+  assigned_at?: string; 
 }
 
 interface Comment {
@@ -27,9 +27,21 @@ interface Comment {
   role: string;
 }
 
+const formatDuration = (seconds: number) => {
+  const days = Math.floor(seconds / (3600 * 24));
+  const hours = Math.floor((seconds % (3600 * 24)) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  return `Days: ${days} Hours: ${hours} Minutes: ${minutes} Seconds: ${secs}`;
+};
+
+
 const EngViewAssigned = () => {
 
   const navigate = useNavigate();
+  const [elapsedTime, setElapsedTime] = useState<string>("");
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
 
   const { ticketId } = useParams<{ ticketId: string }>();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -48,6 +60,23 @@ const EngViewAssigned = () => {
   const isPdf = (url: string) => /\.pdf$/i.test(url);
 
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
+
+   useEffect(() => {
+  if (!ticket?.assigned_at) return;
+
+  const assignedTime = new Date(ticket.assigned_at).getTime();
+  
+
+  const interval = setInterval(() => {
+    const now = Date.now();
+    const diffInSeconds = Math.floor((now - assignedTime) / 1000);
+    setElapsedTime(formatDuration(diffInSeconds));
+    setElapsedSeconds(diffInSeconds);
+    setElapsedTime(formatDuration(diffInSeconds));
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, [ticket]);
 
   useEffect(() => {
     const fetchTicketDetails = async () => {
@@ -240,10 +269,19 @@ const EngViewAssigned = () => {
 
         <div className="flex-1 overflow-y-auto bg-gray-100 p-8">
           {/* Header */}
-          <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+          <div className="bg-white p-6 rounded-lg shadow-md mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
               Ticket ID: <span className="text-teal-600">{ticket.id}</span>
             </h1>
+            {elapsedTime && (
+              <p
+                className={`text-2xl p-5 ${
+                  elapsedSeconds > 3600 ? 'bg-red-100 text-red-700' : 'bg-green-50 text-teal-700'
+                } md:mb-0`}
+              >
+                ⏱️ Lapsed Time since assigned: <span className="font-semibold">{elapsedTime}</span>
+              </p>
+            )}
           </div>
 
           {/* Main Grid */}
@@ -470,8 +508,11 @@ const EngViewAssigned = () => {
 
           {/* Close Ticket Section */}
           <div className="mt-12 bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">
+              Close Ticket 
+            </h2>
           <form
-              className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12"
+              className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-5"
               onSubmit={handleCloseTicket}
             >
               {/* Left Column */}

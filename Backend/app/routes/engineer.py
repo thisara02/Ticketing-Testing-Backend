@@ -418,6 +418,7 @@ def get_engineer_onticket_details(ticket_id):
         "engineer_name":ticket.engineer_name,
         "engineer_contact":ticket.engineer_contact,
         "status": ticket.status,
+        "assigned_at": ticket.assigned_at.isoformat() if ticket.assigned_at else None,
         "documents": [ticket.documents] if ticket.documents else []
     }
 

@@ -224,21 +224,44 @@ const CreateSR = () => {
           handleSubmit(true); // 🔁 Call again with override=true
         }
       });
-    } else {
-      Swal.fire({
-        title: "Attention!",
-        text: data?.error || "Something went wrong.",
-        icon: "error",
-        customClass: {
-          confirmButton: 'bg-green-500 hover:bg-green-600 text-black font-semibold px-4 py-2 rounded mr-2',
-        },
-      });
-    }
-  }
-};
-
-
-
+    } else if (data?.show_add_bundle_prompt) {
+        Swal.fire({
+          title: "Attention!",
+          html: `
+            <p class="text-lg font-semibold text-gray-800">
+              ${data.error}
+            </p>
+            <p class="mt-4 text-lg text-gray-600">
+              Would you like to add additional Service Request Bundles?<br>
+            </p>
+            <p class="mt-4 text-sm text-red-600">
+              <strong>Note:</strong> Additional bundle charges will be added to your monthly bill, in addition to the support type you already purchased.
+            </p>
+          `,
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "Proceed to Add Additional ",
+          cancelButtonText: "Cancel",
+          customClass: {
+            confirmButton:
+              "bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded mr-2",
+            cancelButton:
+              "bg-gray-300 hover:bg-gray-400 text-black font-semibold px-4 py-2 rounded",
+          },
+          buttonsStyling: false,
+        }).then((result) => {
+          if (result.isConfirmed) {
+            // 👇 Call your bundle function or open modal here
+            // Example: setShowAddBundleModal(true);
+            console.log("User wants to add bundle");
+            navigate("/add-bundle");
+            // Or directly call a function like:
+            // await handleAddBundleSubmit();
+          }
+        });
+      }
+      }
+    };
 
   return (
     <div className="h-screen w-screen flex overflow-hidden">

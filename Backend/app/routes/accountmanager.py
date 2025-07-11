@@ -797,6 +797,7 @@ def get_company_details(company_name):
             {
                 "month": b.month,
                 "additional_tickets": b.additional_tickets,
+                "added_by": b.added_by,
                 "created_at": b.created_at.strftime("%Y-%m-%d %H:%M:%S") if b.created_at else None
             }
             for b in bundles

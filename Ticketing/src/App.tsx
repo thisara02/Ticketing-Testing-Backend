@@ -20,6 +20,7 @@ import ViewPending from "./Pages/Customer/ViewPending"
 import AdminLogin from "./Pages/Admin/AdminLogin"
 import ForgotPassword from "./Pages/Customer/ForgotPassword"
 import ResetPass from "./Pages/Customer/ResetPassword"
+import AddBundle from "./Pages/Customer/AdditionalBundle"
 import AdminDash from "./Pages/Admin/AdminDashboard"
 import EngLogin from "./Pages/Engineer/EngLogin"
 import AdminCreateCus from "./Pages/Admin/AdminCreateCus"
@@ -88,6 +89,7 @@ const App: React.FC = () => {
       <Route path="/profile" element={<CusProfile />} />
       <Route path="/forgot-pass" element={<ForgotPassword />} />
       <Route path="/reset-pass" element={<ResetPass />} />
+      <Route path="/add-bundle" element={<AddBundle />} />
 
       <Route path="/admin-login" element={<AdminLogin />} />
       <Route path="/admin-dash" element={<AdminDash />} />
@@ -107,7 +109,6 @@ const App: React.FC = () => {
       <Route path="/admin-otp" element={<AdminOtp />} />
       <Route path="/admin-add-bundle" element={<AdminAddBunldes />} />
       
-
       <Route path="/eng-login" element={<EngLogin />} />
       <Route path="/eng-dash" element={<EngDash />} />
       <Route path="/eng-forgot" element={<EngForgotPass />} />

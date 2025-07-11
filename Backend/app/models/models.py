@@ -64,6 +64,8 @@ class Ticket(db.Model):
     engineer_contact = db.Column(db.String(20))
     work_done_comment = db.Column(db.Text)
     rectification_date = db.Column(db.DateTime, nullable=True)
+    assigned_at = db.Column(db.DateTime, nullable=True)
+    duration = db.Column(db.Integer, nullable=True)
 
 
 class Admin(db.Model):
@@ -147,6 +149,7 @@ class AdditionalTicketBundle(db.Model):
     additional_tickets = db.Column(db.Integer, default=0)
     source = db.Column(db.String(20), nullable=False, default="manual")  # NEW FIELD
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    added_by = db.Column(db.String(100), nullable=True)
 
 class AccountManager(db.Model):
     id = db.Column(db.Integer, primary_key=True)
