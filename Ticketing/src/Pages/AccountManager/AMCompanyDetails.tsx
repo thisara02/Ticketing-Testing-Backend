@@ -56,7 +56,7 @@ const AMCompanyDetail = () => {
     <div className="h-screen w-screen flex overflow-hidden font-jura">
       <div className="flex-1 flex flex-col h-screen min-h-0">
         <Navbar toggleSidebar={() => {}} />
-        <div className="flex-1 overflow-y-auto bg-[#DDE6ED] p-8">
+        <div className="flex-1 overflow-y-auto bg-purple-100 p-8">
           <div className="max-w-4xl mx-auto space-y-8">
             {/* Company Details */}
             <div className="bg-white rounded-xl shadow p-6">

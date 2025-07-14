@@ -120,7 +120,7 @@ const AMDash = () => {
           <Navbar toggleSidebar={toggleSidebar} />
         </div>
 
-        <div className="flex-1 overflow-y-auto bg-[#DDE6ED] font-jura p-6 space-y-10">
+        <div className="flex-1 overflow-y-auto bg-purple-100 font-jura p-6 space-y-10">
           {/* My Profile Section */}
           <div className="w-2/5 mx-auto bg-white rounded-2xl shadow-lg p-6 space-y-4">
             <h2 className="text-2xl font-bold text-gray-800 border-b pb-2 text-center">

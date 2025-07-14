@@ -1,7 +1,6 @@
 import { FaEnvelope, FaLock } from "react-icons/fa";
 import Logo from "../../assets/logo.png";
-import SecurityImage from "../../assets/eng-logo.jpg";
-import BgImage from "../../assets/engback.jpg"; 
+import BgImage from "../../assets/am-back2.jpg"; 
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";// Update to your background image path
 import axios from "axios";
@@ -75,9 +74,8 @@ const handleLogin = async () => {
       style={{ backgroundImage: `url(${BgImage})` }}
     >
       {/* Fullscreen Card */}
-      <div className="flex w-full h-full lg:h-[75%] lg:w-[90%] xl:w-[60%] 2xl:w-[60%] bg-white  rounded-lg shadow-lg overflow-hidden">
-        {/* Left Panel - Login */}
-        <div className="w-full lg:w-3/5 flex items-center justify-center p-4 bg-white">
+      <div className="w-full max-w-md bg-purple-200 rounded-lg shadow-lg p-6">
+        <div className="w-full flex items-center justify-center p-4 bg-purple-200">
           <div className="w-full max-w-md">
             <div className="flex justify-center mt-4 pb-2">
               <img src={Logo} alt="LankaCom" className="h-14" />
@@ -151,15 +149,6 @@ const handleLogin = async () => {
               </a>
             </div>
           </div>
-        </div>
-
-        {/* Right Panel - Image */}
-        <div className="hidden lg:block lg:w-1/2">
-          <img
-            src={SecurityImage}
-            alt="Security"
-            className="w-full h-full object-cover"
-          />
         </div>
       </div>
     </div>

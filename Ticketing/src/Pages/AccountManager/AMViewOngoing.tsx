@@ -137,7 +137,7 @@ const AMViewOngoing = () => {
       <div className="h-screen w-screen flex overflow-hidden">
         <div className="flex-1 flex flex-col h-screen min-h-0">
           <Navbar toggleSidebar={toggleSidebar} />
-          <div className="flex-1 flex items-center justify-center bg-gray-100">
+          <div className="flex-1 flex items-center justify-center bg-purple-100">
             <div className="text-center">
               <p className="text-red-600 text-lg">{error || "Ticket not found"}</p>
               <button 

@@ -125,7 +125,7 @@ const AMViewPending = () => {
       <div className="flex-1 flex flex-col h-screen min-h-0">
         <Navbar toggleSidebar={toggleSidebar} />
 
-        <div className="flex-1 overflow-y-auto bg-gray-100 p-8">
+        <div className="flex-1 overflow-y-auto bg-purple-100 p-8">
           {/* Header */}
           <div className="bg-white p-6 rounded-lg shadow-md mb-6">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">

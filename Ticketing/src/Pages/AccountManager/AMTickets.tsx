@@ -101,7 +101,7 @@ const AMTickets = () => {
           <Navbar toggleSidebar={toggleSidebar} />
         </div>
 
-        <div className="flex-1 overflow-y-auto bg-[#DDE6ED] font-jura p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto bg-purple-100 font-jura p-6 space-y-6">
           <h2 className="text-3xl font-bold text-gray-800 text-center mb-4">Company Tickets</h2>
 
           {/* Filters - single line */}
