@@ -264,7 +264,10 @@ const ViewClosed = () => {
                 <strong>Inquiry Issue :</strong> {ticket.subject}
               </p>
               <p className="text-gray-600 mt-2 text-m font-medium">
-                <strong>Description:</strong> {ticket.description}
+                <strong>Description:</strong> 
+              </p>
+              <p className="text-gray-800 whitespace-pre-line bg-gray-200 rounded-md p-3">
+                {ticket.description}
               </p>
               <p className="text-gray-600 mt-2 text-m font-medium">
                 <strong>Created At:</strong>{" "}

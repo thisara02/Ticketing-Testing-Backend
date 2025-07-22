@@ -198,8 +198,11 @@ const ViewPending = () => {
               <p className="text-red-600 mt-2 text-lg font-medium">
                 <strong>Inquiry Issue:</strong> {ticket.subject}
               </p>
-              <p className="text-gray-600 mt-2 text-m font-medium">
-                <strong>Description:</strong> {ticket.description}
+              <p className="text-gray-600 mt-2 text-m font-medium ">
+                <strong>Description:</strong> 
+              </p>
+              <p className="text-gray-800 whitespace-pre-line bg-gray-200 rounded-md p-3">
+                {ticket.description}
               </p>
               <p className="text-gray-600 mt-2 text-m font-medium">
                 <strong>Created At:</strong> {new Date(ticket.created_at).toLocaleString()}
