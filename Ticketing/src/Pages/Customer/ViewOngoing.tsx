@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Sidebar from "../../components/Sidebar";
 import Navbar from "../../components/Navbar";
 import { useParams } from "react-router-dom";
+import pdfThumbnail from "../../assets/document.png";
 
 interface Ticket {
   id: string;
@@ -25,6 +26,8 @@ interface Comment {
   timestamp: string;
   content: string;
   role: string;
+  attachment_url?: string; // full URL to attachment
+  attachment_type?: string; // MIME type like "image/png", "application/pdf"
 }
 
 const formatDuration = (seconds: number) => {
@@ -44,6 +47,12 @@ const { ticketId } = useParams<{ ticketId: string }>();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const isImage = (url: string) => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
+  // Check if URL is PDF
+  const isPdf = (url: string) => /\.pdf$/i.test(url);
 
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
   const [elapsedTime, setElapsedTime] = useState<string>("");
@@ -112,7 +121,7 @@ const { ticketId } = useParams<{ ticketId: string }>();
   }, [ticketId]);
 
   const handlePostComment = async () => {
-    if (!commentText.trim()) return;
+    if (!commentText.trim() && !selectedFile) return;
 
     try {
       const token = localStorage.getItem("cusToken");
@@ -121,15 +130,19 @@ const { ticketId } = useParams<{ ticketId: string }>();
         return;
       }
 
-      const response = await fetch(`http://localhost:5000/api/customers/on-tickets/${ticketId}/comments`, {
+      const formData = new FormData();
+      formData.append("content", commentText);
+      if (selectedFile) {
+        formData.append("attachment", selectedFile);
+      }
+
+      const response = await fetch(`http://localhost:5000/api/customers/tickets/${ticketId}/comments`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          // Do NOT set Content-Type header with FormData
         },
-        body: JSON.stringify({
-          content: commentText,
-        }),
+        body: formData,
       });
 
       if (!response.ok) {
@@ -137,13 +150,34 @@ const { ticketId } = useParams<{ ticketId: string }>();
       }
 
       const newComment = await response.json();
-      setComments([...comments, newComment]);
+      setComments((prev) => [...prev, newComment]);
       setCommentText("");
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (error) {
       console.error("Error posting comment:", error);
       alert("Failed to post comment. Please try again.");
     }
   };
+
+  const PaperClipIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-4 w-4 inline-block mr-1 text-gray-600"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M16.5 6.5L7 16a2 2 0 01-2.828-2.828l9.5-9.5a4 4 0 115.656 5.656L9 18"
+      />
+    </svg>
+  );
 
   if (loading) {
     return (
@@ -243,16 +277,52 @@ const { ticketId } = useParams<{ ticketId: string }>();
               </p>
                 <p className="text-gray-600 mt-2 text-m font-medium"><strong>Created At:</strong> {new Date(ticket.created_at).toLocaleString()}</p>
                 <p className="text-green-600 mt-2 text-m font-medium"><strong>Status:</strong> {ticket.status}</p>
-                {(ticket.documents || []).length > 0 && (
-                <p className="text-gray-600 mt-2 text-m font-medium">
-                    <strong>Documents:</strong>{" "}
-                    {(ticket.documents || []).map((doc, i) => (
-                    <a key={i} href="#" className="text-blue-600 underline mr-2">
-                        {doc}
-                    </a>
-                    ))}
-                </p>
-                )}
+                {ticket.documents && ticket.documents.length > 0 && (
+                <div className="mt-4 text-gray-600">
+                  <strong>Attached Documents:</strong>
+                  <div className="flex flex-wrap gap-4 mt-2">
+                    {ticket.documents.map((doc, i) => {
+                      if (isImage(doc)) {
+                        return (
+                          <img
+                            key={i}
+                            src={`http://localhost:5000/${doc}`}
+                            alt={`Document ${i + 1}`}
+                            className="w-32 h-32 object-cover rounded-md shadow-md cursor-pointer hover:scale-105 transition-transform"
+                            onClick={() => window.open(`http://localhost:5000/${doc}`, "_blank")}
+                          />
+                        );
+                      } else if (isPdf(doc)) {
+                        return (
+                          <div
+                            key={i}
+                            className="w-24 h-32 flex flex-col items-center justify-center border rounded cursor-pointer hover:shadow-lg transition-shadow bg-gray-400"
+                            onClick={() => window.open(`http://localhost:5000/${doc}`, "_blank")}
+                          >
+                            <img
+                              src="https://cdn-icons-png.flaticon.com/512/337/337946.png"
+                              alt="PDF Icon"
+                              className="w-12 h-12 mb-2"
+                            />
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <a
+                            key={i}
+                            href={`http://localhost:5000/${doc}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 underline"
+                          >
+                            Download {doc.split("/").pop()}
+                          </a>
+                        );
+                      }
+                    })}
+                  </div>
+                </div>
+              )}
                 <p className="text-black mt-2 text-m font-medium"><strong>Your Ticket was assigned by :</strong></p>
                 <p className="text-blue-600 mt-2 text-m font-medium"><strong>Assigned Engineer : </strong> {ticket.engineer_name}</p>
                 <p className="text-blue-600 mt-2 text-m font-medium"><strong>Engineer Contact Number :  </strong> {ticket.engineer_contact}</p>
@@ -262,32 +332,105 @@ const { ticketId } = useParams<{ ticketId: string }>();
                 <div className="bg-white p-6 rounded-lg shadow-md">
                 <h2 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">Comments</h2>
                 <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
-                    {comments.map((comment) => (
+                    {comments.length > 0 ? (
+                  comments.map((comment) => (
                     <div key={comment.id} className="bg-gray-100 p-3 rounded-md">
-                        <p className="text-xs text-gray-500">
-                        {comment.author}, {new Date(comment.timestamp).toLocaleString()}
-                        </p>
-                        <p className="text-m text-gray-700 mb-1">{comment.content}</p>
+                      <p className="text-xs text-gray-500">
+                        <span
+                          className={`font-semibold ${
+                            comment.role === "engineer" ? "text-blue-600" : "text-green-600"
+                          }`}
+                        >
+                          {comment.author} ({comment.role})
+                        </span>
+                        , {new Date(comment.timestamp).toLocaleString()}
+                      </p>
+                      <p className="text-m text-gray-700 mb-1">
+                        {comment.content}
+                      </p>
+                      {comment.attachment_url && (
+                        <div className="mt-2">
+                          {comment.attachment_type?.startsWith("image") ? (
+                            // Image thumbnail
+                            <img
+                              src={comment.attachment_url}
+                              alt="Attachment"
+                              className="max-w-full max-h-40 rounded-md cursor-pointer"
+                              title="Click to open"
+                              onClick={() => window.open(comment.attachment_url, "_blank")}
+                            />
+                          ) : comment.attachment_type?.includes("pdf") ? (
+                            // PDF thumbnail
+                            <img
+                              src={pdfThumbnail}// Replace with your actual PDF thumbnail filename
+                              alt="PDF Attachment"
+                              className="w-24 h-24 rounded-md cursor-pointer hover:opacity-80 transition-opacity"
+                              title="Click to open PDF"
+                              onClick={() => window.open(comment.attachment_url, "_blank")}
+                              onError={(e) => {
+                                // Fallback if the thumbnail image fails to load
+                                const target = e.target as HTMLImageElement;
+                                target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 24 24' fill='none' stroke='%23dc2626' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpolyline points='14,2 14,8 20,8'/%3E%3Cline x1='16' y1='13' x2='8' y2='13'/%3E%3Cline x1='16' y1='17' x2='8' y2='17'/%3E%3Cpolyline points='10,9 9,9 8,9'/%3E%3C/svg%3E";
+                                target.className = "w-24 h-24 rounded-md cursor-pointer p-4 bg-red-50 border border-red-200";
+                              }}
+                            />
+                          ) : (
+                            // Generic file with paperclip icon
+                            <div className="flex items-center">
+                              <PaperClipIcon />
+                            <div className="w-full">
+                              <a
+                                href={comment.attachment_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-blue-600 hover:underline truncate inline-block w-full"
+                                title={comment.attachment_url?.split("/").pop()}
+                              >
+                                📄 {comment.attachment_url?.split("/").pop()}
+                              </a>
+                            </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    ))}
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center">No comments yet</p>
+                )}
                 </div>
 
                 {/* Add Comment */}
                 <div className="mt-6">
-                    <textarea
-                    rows={3}
-                    placeholder="Write a comment..."
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-md mb-2 bg-white text-black"
-                    ></textarea>
-                    <button
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-400 transition"
-                    onClick={handlePostComment}
-                    >
-                    Post Comment
-                    </button>
-                </div>
+                <textarea
+                  rows={3}
+                  placeholder="Write a comment..."
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md mb-2 bg-white text-black resize-none"
+                />
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                  className="mb-2 block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:border file:border-gray-300 file:rounded-md file:bg-gray-600 hover:file:bg-gray-800"
+                />
+
+                {selectedFile && (
+                  <p className="text-sm text-gray-600 mb-2">
+                    Selected file: <strong>{selectedFile.name}</strong>
+                  </p>
+                )}
+
+                <button
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-400 transition disabled:opacity-50"
+                  onClick={handlePostComment}
+                  disabled={!commentText.trim() && !selectedFile}
+                >
+                  Post Comment
+                </button>
+              </div>
                 </div>
             </div>
             </div>

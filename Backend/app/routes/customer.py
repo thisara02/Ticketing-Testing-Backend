@@ -571,6 +571,7 @@ def add_ticket_comment(ticket_id):
 
     company = decoded.get("company")
     customer_name = decoded.get("name", "Customer")
+    customer_email = decoded.get("email")
 
     if not company:
         return jsonify({"error": "Company not found in token"}), 400
@@ -627,6 +628,23 @@ def add_ticket_comment(ticket_id):
 
         db.session.add(comment)
         db.session.commit()
+        
+        engineer = Engineer.query.filter_by(name=ticket.engineer_name).first()
+        if engineer and engineer.email:
+            print("DEBUG: Sending email to engineer about new customer comment")
+            print(" - Email:", engineer.email)
+            print(" - Engineer Name:", engineer.name)
+            print(" - Ticket ID:", ticket.id)
+            print(" - Subject:", ticket.subject)
+            print(" - Comment Content:", content)
+            notify_engineer_about_customer_comment(
+                engineer_email=engineer.email,
+                ticket_id=ticket.id,
+                subject=ticket.subject,
+                comment_content=content,
+                customer_name=customer_name,
+                cc_email=customer_email
+            )
 
         return jsonify({
             "id": comment.id,
@@ -679,13 +697,23 @@ def get_customer_onticket_details(ticket_id):
 
     # Get comments for this ticket
     comments = Comment.query.filter(Comment.ticket_id == ticket_id).order_by(Comment.timestamp.asc()).all()
-    comments_data = [{
-        "id": c.id,
-        "author": c.author_name,
-        "timestamp": c.timestamp.isoformat(),
-        "content": c.message,
-        "role": c.author_role
-    } for c in comments]
+    comments_data = []
+    for c in comments:
+        comment_dict = {
+            "id": c.id,
+            "author": c.author_name,
+            "timestamp": c.timestamp.isoformat(),
+            "content": c.message,
+            "role": c.author_role,
+        }
+
+        if c.attachment_path:
+            # Assuming you have an endpoint 'customer_bp.get_profile_image' or similar to serve files
+            attachment_url = url_for('customer.get_cus_profile_image', filename=c.attachment_path, _external=True)
+            comment_dict["attachment_url"] = attachment_url
+            comment_dict["attachment_type"] = c.attachment_type
+
+        comments_data.append(comment_dict)
 
     ticket_data = {
         "id": ticket.id,
@@ -700,7 +728,7 @@ def get_customer_onticket_details(ticket_id):
         "engineer_name":ticket.engineer_name,
         "engineer_contact":ticket.engineer_contact,
         "assigned_at": ticket.assigned_at.isoformat() if ticket.assigned_at else None,
-        "documents": []  # Add document handling if needed
+        "documents": [ticket.documents] if ticket.documents else []
     }
 
     return jsonify({
@@ -747,6 +775,35 @@ def add_onticket_comment(ticket_id):
     
     if not content:
         return jsonify({"error": "Comment content is required"}), 400
+    
+    file = request.files.get('attachment')
+
+    attachment_path = None
+    attachment_type = None
+
+    # Handle file upload
+    if file:
+        filename = secure_filename(file.filename)
+        mimetype = file.content_type
+
+        if not filename:
+            return jsonify({"error": "Invalid file name"}), 400
+
+        upload_folder = os.path.join(current_app.root_path, 'uploads', 'profile_images')
+        os.makedirs(upload_folder, exist_ok=True)
+
+        # Save file with timestamp prefix to avoid overwrites
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        safe_filename = f"{timestamp}_{filename}"
+        file_path = os.path.join(upload_folder, safe_filename)
+        file.save(file_path)
+
+        attachment_path = safe_filename
+        attachment_type = 'image' if mimetype and 'image' in mimetype else 'document'
+
+    # Require at least content or a file
+    if not content and not file:
+        return jsonify({"error": "Content or file is required"}), 400
 
     try:
         # Create new comment
@@ -755,7 +812,9 @@ def add_onticket_comment(ticket_id):
             author_name=customer_name,
             author_role='customer',
             message=content,
-            timestamp=datetime.now(timezone('Asia/Colombo'))
+            timestamp=datetime.now(timezone('Asia/Colombo')),
+            attachment_path=attachment_path,
+            attachment_type=attachment_type
         )
 
         db.session.add(comment)
@@ -779,19 +838,19 @@ def add_onticket_comment(ticket_id):
                 cc_email=customer_email
             )
 
-        new_comment = {
+        return jsonify({
             "id": comment.id,
             "author": comment.author_name,
             "timestamp": comment.timestamp.isoformat(),
             "content": comment.message,
-            "role": comment.author_role
-        }
-
-        return jsonify(new_comment), 201
+            "role": comment.author_role,
+            "attachment_url": f"/uploads/{attachment_path}" if attachment_path else None,
+            "attachment_type": attachment_type
+        }), 201
 
     except Exception as e:
         db.session.rollback()
-        print(f"Failed to create comment: {e}")
+        current_app.logger.error(f"Failed to create comment: {e}")
         return jsonify({"error": "Failed to create comment"}), 500
     
     
@@ -1162,13 +1221,23 @@ def get_cus_closeticket_details(ticket_id):
 
     # Get comments for this ticket
     comments = Comment.query.filter(Comment.ticket_id == ticket_id).order_by(Comment.timestamp.asc()).all()
-    comments_data = [{
-        "id": c.id,
-        "author": c.author_name,
-        "timestamp": c.timestamp.isoformat(),
-        "content": c.message,
-        "role": c.author_role
-    } for c in comments]
+    comments_data = []
+    for c in comments:
+        comment_dict = {
+            "id": c.id,
+            "author": c.author_name,
+            "timestamp": c.timestamp.isoformat(),
+            "content": c.message,
+            "role": c.author_role,
+        }
+
+        if c.attachment_path:
+            # Assuming you have an endpoint 'customer_bp.get_profile_image' or similar to serve files
+            attachment_url = url_for('customer.get_cus_profile_image', filename=c.attachment_path, _external=True)
+            comment_dict["attachment_url"] = attachment_url
+            comment_dict["attachment_type"] = c.attachment_type
+
+        comments_data.append(comment_dict)
 
     ticket_data = {
         "id": ticket.id,

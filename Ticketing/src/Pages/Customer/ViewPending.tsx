@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Navbar from "../../components/Navbar";
@@ -36,6 +36,8 @@ const ViewPending = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
 
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
@@ -118,6 +120,10 @@ const ViewPending = () => {
       setComments((prev) => [...prev, newComment]);
       setCommentText("");
       setSelectedFile(null);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (error) {
       console.error("Error posting comment:", error);
       alert("Failed to post comment. Please try again.");
@@ -368,9 +374,10 @@ const ViewPending = () => {
                 />
 
                 <input
+                  ref={fileInputRef}
                   type="file"
                   onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                  className="mb-2 block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:border file:border-gray-300 file:rounded-md file:bg-gray-50 hover:file:bg-gray-100"
+                  className="mb-2 block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:border file:border-gray-300 file:rounded-md file:bg-gray-600 hover:file:bg-gray-800"
                 />
 
                 {selectedFile && (

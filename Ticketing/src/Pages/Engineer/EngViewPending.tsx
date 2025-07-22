@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Sidebar from "../../components/EngSide";
 import Navbar from "../../components/EngNav";
 import { useParams } from "react-router-dom";
@@ -39,6 +39,9 @@ const EngViewPending = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const token = localStorage.getItem("engToken");
 
   
   const [, setPendingRequests] = useState<Ticket[]>([]);
@@ -145,6 +148,7 @@ const EngViewPending = () => {
     return () => clearInterval(interval);
   }, [ticketId]);
 
+  
   const handlePostComment = async () => {
     if (!commentText.trim() && !selectedFile) return;
 
@@ -178,6 +182,10 @@ const EngViewPending = () => {
       setComments((prev) => [...prev, newComment]);
       setCommentText("");
       setSelectedFile(null);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (error) {
       console.error("Error posting comment:", error);
       alert("Failed to post comment. Please try again.");
@@ -431,19 +439,20 @@ const EngViewPending = () => {
                 />
 
                 <input
+                 ref={fileInputRef}
                   type="file"
                   onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                  className="mb-2 block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:border file:border-gray-300 file:rounded-md file:bg-gray-50 hover:file:bg-gray-100"
+                  className="mb-2 block w-full text-sm text-black file:mr-4 file:py-2 file:px-4 file:border file:border-gray-300 file:rounded-md file:bg-gray-600 hover:file:bg-gray-800"
                 />
 
                 {selectedFile && (
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm text-black mb-2">
                     Selected file: <strong>{selectedFile.name}</strong>
                   </p>
                 )}
 
                 <button
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-400 transition disabled:opacity-50"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-400 transition disabled:opacity-50 "
                   onClick={handlePostComment}
                   disabled={!commentText.trim() && !selectedFile}
                 >

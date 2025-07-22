@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "../../components/EngSide";
 import Navbar from "../../components/EngNav";
 import { useParams } from "react-router-dom";
+import pdfThumbnail from "../../assets/document.png";
 
 interface Ticket {
   id: string;
@@ -28,12 +29,11 @@ interface Comment {
   timestamp: string;
   content: string;
   role: string;
+  attachment_url?: string; // full URL to attachment
+  attachment_type?: string; // MIME type like "image/png", "application/pdf"
 }
 
 const EngViewClosed = () => {
-
-
-
   const { ticketId } = useParams<{ ticketId: string }>();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   // const [commentText, setCommentText] = useState("");
@@ -41,6 +41,8 @@ const EngViewClosed = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [] = useState<File | null>(null);
+  
 
   // Check if URL is image
   const isImage = (url: string) => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
@@ -124,6 +126,23 @@ const EngViewClosed = () => {
   //     alert("Failed to post comment. Please try again.");
   //   }
   // };
+
+  const PaperClipIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-4 w-4 inline-block mr-1 text-gray-600"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M16.5 6.5L7 16a2 2 0 01-2.828-2.828l9.5-9.5a4 4 0 115.656 5.656L9 18"
+      />
+    </svg>
+  );
 
   if (loading) {
     return (
@@ -358,15 +377,72 @@ const EngViewClosed = () => {
                 Comments
               </h2>
               <div className="space-y-4 max-h-80 overflow-y-auto pr-2 flex-grow">
-                {comments.map((comment) => (
-                  <div key={comment.id} className="bg-gray-100 p-3 rounded-md">
-                    <p className="text-xs text-gray-500">
-                      {comment.author},{" "}
-                      {new Date(comment.timestamp).toLocaleString()}
-                    </p>
-                    <p className="text-m text-gray-700 mb-1">{comment.content}</p>
-                  </div>
-                ))}
+                {comments.length > 0 ? (
+                  comments.map((comment) => (
+                    <div key={comment.id} className="bg-gray-100 p-3 rounded-md">
+                      <p className="text-xs text-gray-500">
+                        <span
+                          className={`font-semibold ${
+                            comment.role === "engineer" ? "text-blue-600" : "text-green-600"
+                          }`}
+                        >
+                          {comment.author} ({comment.role})
+                        </span>
+                        , {new Date(comment.timestamp).toLocaleString()}
+                      </p>
+                      <p className="text-m text-gray-700 mb-1">
+                        {comment.content}
+                      </p>
+                      {comment.attachment_url && (
+                        <div className="mt-2">
+                          {comment.attachment_type?.startsWith("image") ? (
+                            // Image thumbnail
+                            <img
+                              src={comment.attachment_url}
+                              alt="Attachment"
+                              className="max-w-full max-h-40 rounded-md cursor-pointer"
+                              title="Click to open"
+                              onClick={() => window.open(comment.attachment_url, "_blank")}
+                            />
+                          ) : comment.attachment_type?.includes("pdf") ? (
+                            // PDF thumbnail
+                            <img
+                              src={pdfThumbnail}// Replace with your actual PDF thumbnail filename
+                              alt="PDF Attachment"
+                              className="w-24 h-24 rounded-md cursor-pointer hover:opacity-80 transition-opacity"
+                              title="Click to open PDF"
+                              onClick={() => window.open(comment.attachment_url, "_blank")}
+                              onError={(e) => {
+                                // Fallback if the thumbnail image fails to load
+                                const target = e.target as HTMLImageElement;
+                                target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 24 24' fill='none' stroke='%23dc2626' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpolyline points='14,2 14,8 20,8'/%3E%3Cline x1='16' y1='13' x2='8' y2='13'/%3E%3Cline x1='16' y1='17' x2='8' y2='17'/%3E%3Cpolyline points='10,9 9,9 8,9'/%3E%3C/svg%3E";
+                                target.className = "w-24 h-24 rounded-md cursor-pointer p-4 bg-red-50 border border-red-200";
+                              }}
+                            />
+                          ) : (
+                            // Generic file with paperclip icon
+                            <div className="flex items-center">
+                              <PaperClipIcon />
+                              <div className="w-full">
+                                <a
+                                  href={comment.attachment_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-blue-600 hover:underline truncate inline-block w-full"
+                                  title={comment.attachment_url?.split("/").pop()}
+                                >
+                                  📄 {comment.attachment_url?.split("/").pop()}
+                                </a>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center">No comments yet</p>
+                )}
               </div>
 
               {/* Add Comment */}
