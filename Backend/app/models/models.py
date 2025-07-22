@@ -94,6 +94,9 @@ class Comment(db.Model):
     author_role = db.Column(db.String(20), nullable=False)  # 'customer' or 'engineer'
     message = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    attachment_path = db.Column(db.String(255))  # Optional
+    attachment_type = db.Column(db.String(20))  # e.g., 'image', 'document'
+
     
 class OTPModel(db.Model):
     __tablename__ = 'otp'

@@ -1,7 +1,7 @@
 import math
 import os
 import random
-from flask import Blueprint, app, request, jsonify, current_app
+from flask import Blueprint, app, request, jsonify, current_app, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from app.models import LoginAttempt,SupportType,SRQuotaUsage,AdditionalTicketBundle
@@ -264,13 +264,23 @@ def get_engineer_ticket_details(ticket_id):
 
     # Get comments for this ticket
     comments = Comment.query.filter(Comment.ticket_id == ticket_id).order_by(Comment.timestamp.asc()).all()
-    comments_data = [{
-        "id": c.id,
-        "author": c.author_name,
-        "timestamp": c.timestamp.isoformat(),
-        "content": c.message,
-        "role": c.author_role
-    } for c in comments]
+    comments_data = []
+    for c in comments:
+        comment_dict = {
+            "id": c.id,
+            "author": c.author_name,
+            "timestamp": c.timestamp.isoformat(),
+            "content": c.message,
+            "role": c.author_role,
+        }
+
+        if c.attachment_path:
+            # Assuming you have an endpoint 'customer_bp.get_profile_image' or similar to serve files
+            attachment_url = url_for('customer.get_cus_profile_image', filename=c.attachment_path, _external=True)
+            comment_dict["attachment_url"] = attachment_url
+            comment_dict["attachment_type"] = c.attachment_type
+
+        comments_data.append(comment_dict)
 
     ticket_data = {
         "id": ticket.id,
@@ -323,6 +333,35 @@ def eng_add_ticket_comment(ticket_id):
 
     if not content:
         return jsonify({"error": "Comment content is required"}), 400
+    
+    file = request.files.get('attachment')
+
+    attachment_path = None
+    attachment_type = None
+
+    # Handle file upload
+    if file:
+        filename = secure_filename(file.filename)
+        mimetype = file.content_type
+
+        if not filename:
+            return jsonify({"error": "Invalid file name"}), 400
+
+        upload_folder = os.path.join(current_app.root_path, 'uploads', 'profile_images')
+        os.makedirs(upload_folder, exist_ok=True)
+
+        # Save file with timestamp prefix to avoid overwrites
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        safe_filename = f"{timestamp}_{filename}"
+        file_path = os.path.join(upload_folder, safe_filename)
+        file.save(file_path)
+
+        attachment_path = safe_filename
+        attachment_type = 'image' if mimetype and 'image' in mimetype else 'document'
+
+    # Require at least content or a file
+    if not content and not file:
+        return jsonify({"error": "Content or file is required"}), 400
 
     try:
         comment = Comment(
@@ -330,7 +369,9 @@ def eng_add_ticket_comment(ticket_id):
             author_name=engineer_name,
             author_role='Engineer',
             message=content,
-            timestamp=datetime.now(pytz.timezone('Asia/Colombo'))
+            timestamp=datetime.now(pytz.timezone('Asia/Colombo')),
+            attachment_path=attachment_path,
+            attachment_type=attachment_type
         )
 
         db.session.add(comment)

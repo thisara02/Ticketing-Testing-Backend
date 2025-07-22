@@ -1,14 +1,14 @@
-import React, { useRef } from "react";
+import React from "react";
 import Logo from "../assets/logo.png";
-import { NavLink, useNavigate } from "react-router-dom";
-import { FaBell, FaBars } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import { FaBars } from "react-icons/fa";
 
 interface NavbarProps {
   toggleSidebar: () => void;
 }
 
 const AdminNav: React.FC<NavbarProps> = ({ toggleSidebar }) => {
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  
   const navigate = useNavigate();
 
   return (
